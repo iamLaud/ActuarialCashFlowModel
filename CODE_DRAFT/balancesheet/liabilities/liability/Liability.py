@@ -3,7 +3,7 @@
 Created on Thu May 18 10:01:38 2017
 
 @author: FR015797
-Date of last revision: May 18th 2017
+Date of last revision: May 29th 2017
 """
 
 
@@ -22,10 +22,19 @@ import numpy as np
 #--------------------------------------------------
 
 class Liability(object):
-    def __init__(self, value=1, duration=50):
+    def __init__(self, volume=0, value=1, time_horizon=50, starting_point=1, duration=20):
+        self.time_horizon = time_horizon
+        self.starting_point = starting_point
         self.duration = duration
-        self.value = pd.DataFrame(data=value, index=np.arange(1,duration+1), columns=['Value'])
-    
+        
+        self.volume = volume
+        self.volume = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Volume']) 
+        self.volume.loc[self.starting_point:self.time_horizon, 'Volume'] = volume
+        
+        self.value = value
+        self.value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Value']) 
+        self.value.loc[self.starting_point:self.time_horizon, 'Value'] = value
+        
     def update(self):
         pass
     
@@ -35,13 +44,9 @@ class Liability(object):
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
-
-def main():
-    test = Liability(value=10, duration=20)        
-    #test = Liability()
-    #print(test1.__str__())
-    print(str(test.duration))
-    print(test.value)
-    
-if __name__ == "__main__":
-    main()
+#
+#def main():
+#
+#    
+#if __name__ == "__main__":
+#    main()
