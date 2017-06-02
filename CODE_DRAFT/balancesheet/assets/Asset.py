@@ -21,7 +21,7 @@ import numpy as np
 #--------------------------------------------------
 
 class Asset(object):
-    def __init__(self, volume=0, return_rate=.01, value=1, time_horizon=50, starting_point=1):
+    def __init__(self, volume=0, return_rate=.01, value=1, time_horizon=50, starting_point=1): # we only consider Asset priced at 1$ each
         self.starting_point = starting_point
         self.time_horizon = time_horizon
         self.flag = 0
@@ -52,7 +52,12 @@ class Asset(object):
     
     def cashOut(self):
         raise NotImplementedError("Subclass must implement abstract method")
-    
+        
+    def sell(self, amount, current_step):
+        assert(amount <= self.volume.loc[current_step, 'Volume'] * self.value.loc[current_step, 'Value'])
+        self.volume.loc[current_step, 'Volume'] -= amount/self.value.loc[current_step, 'Value'] 
+        #only works for now with value=1 - translates the indivisibility state of the assets
+        
     def __str__(self):
         return("value: " + self.value.__str__() + "\n\nvolume: " + str(self.volume) + "\n\nreturn rate: " + self.return_rate.__str__())
     

@@ -23,7 +23,7 @@ class WealthStream():
     """A class modeling the structure of a stream of wealth as used in the ALM model:
 
     Attributes:
-        value: A value of the rate over time (DataFrame of floats)
+        value: A value of the rate over time (DataFrame of Float)
         time_horizon: The time horizon over which the simulation takes place (integer).
     """
     
@@ -92,8 +92,6 @@ class WealthStream():
     def __str__(self):
      return "The value of the wealth available per year of simulation is \n" + (self.value.__str__())
  
-
-
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------

@@ -23,9 +23,33 @@ import pandas as pd
 #--------------------------------------------------
 
 class Assets(object):
+    """
+        represents of portfolio of Assets composed of Bonds, Equities and Cash
+        
+        Assets is basically a List of Asset
+    """
     def __init__(self, nbBond=1, nbEquity=1, nbCash=1, \
                  ratio={'Bond':.7, 'Equity':.2, 'Cash':.1},\
                  wealth = 1000, time_horizon=25):
+        """
+            creates an instance of the Assets class
+            
+            By default, the portfolio is composed of 1x Bond, 1x Equity and 1x Cash with the following ratio: .7, .2, .1
+                and an available wealth of 1000 euros split between these 3 classes of Asset over a 25-year horizon.
+                
+            :param portfolio: the core of the class
+            :param nbBond: the number of Bond instrument composing the portfolio of Assets
+            :param nbEquity: the number of Equity instrument composing the portfolio of Assets
+            :param nbCash: the number of Cash instrument composing the portfolio of Assets
+            :param wealth: the amount of wealth to be invested in the portfolio
+            :param time_horizon: the projected duration of the simulation
+            :type portfolio: List of Asset
+            :type nbBond: Integer
+            :type nbEquity: Integer
+            :type nbCash: Integer
+            :type wealth: Float
+            :type time_horizon: Integer
+        """
         self.portfolio = []
         self.nbBond = nbBond
         self.nbEquity = nbEquity
@@ -43,6 +67,9 @@ class Assets(object):
         
     
     def computePortfolioVal(self): 
+        """
+            returns the value of the portfolio over the duration of the simulation
+        """
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Portfolio Value'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
@@ -54,6 +81,9 @@ class Assets(object):
         return value
     
     def computePortfolioPGL(self): 
+        """
+            returns the value of the potential gains & losses over the duration of the simulation
+        """
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Portfolio PGL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
@@ -65,6 +95,9 @@ class Assets(object):
         return value
     
     def computeBondPGL(self):
+        """
+            returns the value of the potential Bond gains & losses over the duration of the simulation
+        """
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Bonds PGL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
@@ -73,6 +106,9 @@ class Assets(object):
         return value
     
     def computeEQPGL(self):
+        """
+            returns the value of the potential Equity gains & losses over the duration of the simulation
+        """
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Equities PGL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Equity'):
@@ -81,6 +117,9 @@ class Assets(object):
         return value
     
     def update(self, current_step):
+        """
+            updates the value of the portfolio over a period of time
+        """
         for e in self.portfolio:
             e.update(current_step)
             if(e.flag != 0):
@@ -90,11 +129,22 @@ class Assets(object):
                 e.flag = 0 
                 # on réinvestit automatiquement le nominal
 
+    def rebalance(self):
+        pass
+        # implementer le rebalancement du portfolio selon le self.ratio
+    
+    def lookout(self, amount, current_step, type='Equity'):
+        pass
+        #returns the Asset(s) whose value at a given step of time is the closest to the desired amount 
+        
     def clear(self):
-       total_amount = 0
-       for asset in self.portfolio:
-           total_amount += asset.cashOut(self.time_horizon)
-       return total_amount
+        """
+            clears the portfolio and returns the amount of money invested in it.
+        """
+        total_amount = 0
+        for asset in self.portfolio:
+            total_amount += asset.cashOut(self.time_horizon)
+        return total_amount
 
 #--------------------------------------------------
 #       Start of the testing part of the code
