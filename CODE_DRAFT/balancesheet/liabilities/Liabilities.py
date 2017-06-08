@@ -24,7 +24,8 @@ import pandas as pd
 
 class Liabilities(object):
     def __init__(self, cap_reserve=None, math_provision=None,\
-                 own_funds=None, profit_shar_prov=None, eligib_prov=None, time_horizon=50):
+                 own_funds=None, profit_shar_prov=None,\
+                 eligib_prov=None, time_horizon=50):
              
         self.math_provision = [] # List des contrats d'assurance
         self.other_provisions = {} # Dict des provisions hors PM
@@ -64,12 +65,6 @@ class Liabilities(object):
             # parametrer la provision
 # ---------------------------------------------------------                       
 
-    def computeProvisions(self, aWStream):
-        # on recalcule les valeurs des provisions 
-        # en fonction de l'etat de notre portefeuille d'actifs
-        for e in self.other_provisions:
-            pass
-     
     def computeMPVal(self):
         val = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1),\
                            columns=['MP Value'])
@@ -86,22 +81,68 @@ class Liabilities(object):
             val.loc[:, 'Liabilities Value'] += value.value.loc[:, 'Value']
         return val
     
-    def update(self, current_step, mode='early'): # on actualise ici les contrats d'assurance
-        if(mode == 'early'):
+    def _lookout_(self, current_step):
+        """
+            returns the Liability whose time2expiry at a given step of time is the shortest
+        """
+        choice = 0
+        selection = self.math_provision
+        selection.sort(key=lambda x:(x.time2expiration), reverse=False)
+        choice = selection[0]
+        return choice 
+    
+    def _decrease_(self, amount, current_step):
+        tmp = 0
+        while(tmp < amount):
+            e = self._lookout_(current_step)
+            if(e.value.loc[current_step, 'Contract Value'] >= amount):
+                tmp += e.buyBack(current_step=current_step,\
+                                   amount=amount, percentage=0)
+            else:
+                tmp += e.buyBack(current_step=current_step,\
+                                   percentage=1)
+                e.time2expiration = 999999 # +infty
+                
+    def _increase_(self, amount, current_step): # to increase the amount of Liabilities
+        self.math_provision.append(Liability(value=amount, time_horizon=50,\
+                                             starting_point=current_step,\
+                                             time2expiration=20))    
+    
+    def update(self, current_step, cash_flow_in, cash_flow_out, available_wealth, mode='mid'):
+        # on actualise ici les contrats d'assurance contenus dans math_provision
+        if(mode == 'mid'): # anciennete et age
             for e in self.math_provision:
-                if(e.update(current_step) != 0):
-                    pass #si !=0 on a des sorties de contrats donc on doit vendre des actifs en face
-            
+                tmp = e.update(current_step)
+                if(tmp != 0):
+                    cash_flow_out.value.loc[current_step, 'Stream Value'] = tmp
+                    #si !=0 on a des sorties de contrats donc on MaJ la WStream des CF_out
             for key, e in self.other_provisions.items():            
-                e.update(current_step) 
+                tmp = e.update(current_step)
+                if(tmp != 0):
+                    cash_flow_in.value.loc[current_step, 'Stream Value'] = tmp
+                    #si !=0 on a des reprises sur dotation on MaJ le CF_in 
+                    
+        if(mode == 'early'): # rachats, deces, entrees, sorties, taux
+            pass # pour l'instant on fusionne l'etape 'early' et 'mid'
+        
+        if(mode == 'late'): #actualisation PM et repartition provisions APRES SERVICE DES TAUX
+            tmp = available_wealth.loc[current_step, 'Stream Value']    
+            if(tmp>0):
+                self.other_provisions['PPB'].value.loc[current_step, 'Value'] = tmp
+                available_wealth.value.loc[current_step, 'Stream Value'] -= tmp
+            # si available_wealth > 0 apres service des taux, il reste de l'argent a doter quelques part (marge ou provisions)    
             
+    def _clear_(self):
+        flag = 0
+        for e in self.math_provision:
+            flag += e.buyBack(current_step=self.time_horizon)
+        return flag
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
 
 def main():
     passif = Liabilities()
-    print(passif.computeMPVal())
 
     
 if __name__ == "__main__":

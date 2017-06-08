@@ -70,7 +70,13 @@ class Equity(Asset):
         """
             capitalizes the Equity over a period of time
         """
-        self.value.loc[current_step:self.time_horizon, 'Book Value'] = self.value.loc[current_step, 'Book Value'] * (1 + self.return_rate.loc[current_step, 'RRate'])
+       # ------------------- TEST A ENLEVER ------------------
+        mean = 0
+        std = .05
+        noise = np.random.normal(mean, std, size=1)
+#        noise = 0
+        # ----------------------------------------------------
+        self.value.loc[current_step:self.time_horizon, 'Book Value'] = noise + self.value.loc[current_step, 'Book Value'] * (1 + self.return_rate.loc[current_step, 'RRate'])
         # integrer le versement des dividendes 
         
     def cashOut(self, current_step):
@@ -87,6 +93,7 @@ class Equity(Asset):
     def sell(self, amount, current_step):
         assert(amount <= self.volume.loc[current_step, 'Volume'] * self.value.loc[current_step, 'Market Value'])
         self.volume.loc[current_step:self.time_horizon, 'Volume'] -= amount/self.value.loc[current_step, 'Market Value'] 
+        return amount*self.value.loc[current_step, 'Market Value']
         #only works for now with value=1 - translates the indivisibility state of the assets
         
     def getWealth(self, current_step):

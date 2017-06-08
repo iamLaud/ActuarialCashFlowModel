@@ -42,7 +42,8 @@ class Provision(object):
         self.recovery_frequency = recovery_frequency
         self.recovery_percentage = recovery_percentage
         
-    def computeProvision(self, aWStream, type='PPB'):
+    def computeProvision(self, WStream_in, current_step, type='PPB'):
+        flag = 0
         if(type == 'PPB'):
             pass # implementer ici la formule de calcul de la PPB
         elif(type == 'PRE'):
@@ -51,25 +52,30 @@ class Provision(object):
             pass # implementer ici la formule de la CapRes
         elif('Fonds propres'):
             pass # implementer ici la formule de calcul des FP
+        return flag
         # updates the self.value
      
     def update(self, current_step): # on implemente ici les regles de mise a jour auto
         # on actualise la provision avec les reprises
+        flag = 0
         if(self.recovery_mode == 'percentage'):
-            pass
+            flag = self.recovery_percentage * \
+                self.value.loc[self.starting_point:self.time_horizon, 'Value']
+            self.value.loc[self.starting_point:self.time_horizon, 'Value'] -= flag            
         elif(self.recovery_mode == 'frequency'):
             pass
+        return flag
     
-    def recover(self, amount):
+    def recover(self, amount, current_step):
         # we use some or all the provision to feed a Wealthstream
-        raise NotImplementedError('Not implemented yet!')
-
-    def allocate(self, amount):
-        raise NotImplementedError('Not implemented yet!')
-        # we receive some or all the provision to feed a Wealthstream
+        self.value.loc[current_step:self.time_horizon, 'Value'] -= amount
+        
+    def allocate(self, amount, current_step):
+        self.value.loc[current_step:self.time_horizon, 'Value'] += amount
+        # we receive some or all the provision from a Wealthstream
                
     def __str__(self):
-     return "The value of the provision per year of simulation is \n" + (self.get_provision())
+        return "The value of the provision per year of simulation is \n" + (self.get_provision())
     
     
 #--------------------------------------------------

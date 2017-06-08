@@ -33,8 +33,8 @@ class Asset(object):
         self.return_rate = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['RRate'])
         self.return_rate.loc[self.starting_point:self.time_horizon, 'RRate'] = return_rate
         # Initialisation de value
-        self.value = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['Value'])
-        self.value.loc[self.starting_point:self.time_horizon, 'Value'] = value
+        self.value = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['Market Value'])
+        self.value.loc[self.starting_point:self.time_horizon, 'Market Value'] = value
         # Initialisation des PGL
         self.potential = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['Potential Gain', 'Potential Loss'])
         
@@ -54,8 +54,9 @@ class Asset(object):
         raise NotImplementedError("Subclass must implement abstract method")
         
     def sell(self, amount, current_step):
-        assert(amount <= self.volume.loc[current_step, 'Volume'] * self.value.loc[current_step, 'Value'])
-        self.volume.loc[current_step, 'Volume'] -= amount/self.value.loc[current_step, 'Value'] 
+        assert(amount <= self.volume.loc[current_step, 'Volume'] * self.value.loc[current_step, 'Market Value'])
+        self.volume.loc[current_step, 'Volume'] -= amount/self.value.loc[current_step, 'Market Value']
+        return amount*self.value.loc[current_step, 'Market Value']
         #only works for now with value=1 - translates the indivisibility state of the assets
         
     def __str__(self):

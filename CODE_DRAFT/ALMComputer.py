@@ -35,6 +35,7 @@ class ALMComputer(object):
         
 #        ---------- INITIALIZATION ------------------------       
         self.available_wealth = WealthStream()
+        self.total_asset_wealth = WealthStream()
         self.max_wealth = WealthStream()
         self.min_wealth = WealthStream()
         self.net_potential_gain = WealthStream()
@@ -57,13 +58,16 @@ class ALMComputer(object):
         self.updateEnd()
     
     def updateStart(self):
-        pass
+        pass # on met à jour les actifs
     
     def updateMid(self):
-        pass
+        pass # on met à jour les jours les passifs
+        # on cherche a servir les taux en appelant les differents leviers -- appeler la fonction computeRate de la classe Rate ici
+        # toutes les classes de Rate seront appelees ici et interagiront avec les WealthStreams
     
     def updateEnd(self):
-        pass
+        pass # on alloue les provisions et les benefices + marges
+        # reallocation et rebalancement
     
 # --------------  MAIN OF THE PROGRAM -----------------------
     def main():
@@ -71,6 +75,7 @@ class ALMComputer(object):
         for k in range(1, simulator.nb_simulation+1):
             for t in range(1, simulator.time_horizon+1):
                 simulator.simulatePeriod()    
+            
             #------------ Save option -----------------
             path = r'C:\Users\FR015797\Documents\PyALM_gen\data' # write here the absolute path to the data directory of the project
             filename = '\save_trajectory'+str(k)+'.csv'

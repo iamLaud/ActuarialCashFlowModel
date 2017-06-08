@@ -37,23 +37,23 @@ class Liability(object):
         
     def buyBack(self, current_step, percentage=1, amount=0):
         assert(amount <= self.value.loc[current_step, 'Contract Value'])
-        outstanding = percentage * self.value.loc[current_step, 'Contract Value'] + amount
+        flag = percentage * self.value.loc[current_step, 'Contract Value'] + amount
         if(current_step<self.time_horizon):
-            self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Contract Value'] -= outstanding
-        return(outstanding) 
+            self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Contract Value'] -= flag
+        return flag 
    
     def updateValue(self, current_step): # update auto des contrats (actions de vieillissement only)
-        self.value.loc[current_step:self.time_horizon, 'Contract Value'] -= 0 # Implementer les sorties dues aux deces et rachats
+        self.value.loc[current_step:self.time_horizon, 'Contract Value'] -= 0 # Implementer les sorties dues aux deces et rachats structurels
         # charger et appliquer ici les formules des tables de morta et rachats
         # 1 mort ou 1 rachat = 1 appel de buyBack()
         
     def update(self, current_step): # update auto des contrats (Actions de vieillissement + application des regles ALM)
-        outstanding = 0
+        flag = 0
         self.updateValue(current_step) # on vieillit les contrats avant d'effectuer les sorties
         self.time2expiration -= 1
         if(self.time2expiration == 0):
-            outstanding = self.buyBack(current_step)
-        return outstanding
+            flag = self.buyBack(current_step)
+        return flag
         # on met à jour le volume selon les rachats et deces associes a ce contrat
     
     def __str__(self):

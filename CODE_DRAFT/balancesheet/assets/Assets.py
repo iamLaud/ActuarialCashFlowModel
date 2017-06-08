@@ -51,6 +51,7 @@ class Assets(object):
             :type time_horizon: Integer
         """
         self.portfolio = []
+        self.ratio = ratio
         self.nbBond = nbBond
         self.nbEquity = nbEquity
         self.nbCash = nbCash
@@ -73,11 +74,32 @@ class Assets(object):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Portfolio Value'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
-                value['Portfolio Value'] += asset.value['Book Value'] * asset.volume['Volume']
+                value['Portfolio Value'] += asset.value['Market Value'] * asset.volume['Volume']
             elif(type(asset).__name__ == 'Equity'):
-                value['Portfolio Value'] += asset.value['Book Value'] * asset.volume['Volume']
+                value['Portfolio Value'] += asset.value['Market Value'] * asset.volume['Volume']
             elif(type(asset).__name__ == 'Cash'):
-                value['Portfolio Value'] += asset.value['Value'] * asset.volume['Volume']
+                value['Portfolio Value'] += asset.value['Market Value'] * asset.volume['Volume']
+        return value
+    
+    def computeEQVal(self):
+        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['EQ Total Value'])
+        for asset in self.portfolio:
+            if(type(asset).__name__ == 'Equity'):
+                value['EQ Total Value'] += asset.value['Market Value'] * asset.volume['Volume']
+        return value
+    
+    def computeBondVal(self):
+        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Bond Total Value'])
+        for asset in self.portfolio:
+            if(type(asset).__name__ == 'Bond'):
+                value['Bond Total Value'] += asset.value['Market Value'] * asset.volume['Volume']
+        return value
+    
+    def computeCashVal(self):
+        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Cash Total Value'])
+        for asset in self.portfolio:
+            if(type(asset).__name__ == 'Cash'):
+                value['Cash Total Value'] += asset.value['Market Value'] * asset.volume['Volume']
         return value
     
     def computePortfolioPGL(self): 
@@ -128,23 +150,73 @@ class Assets(object):
                 self.portfolio[-1].volume.loc[current_step, 'Volume'] = 0  # ----------- ATTENTION -------------
                 e.flag = 0 
                 # on réinvestit automatiquement le nominal
-
-    def rebalance(self):
-        pass
-        # implementer le rebalancement du portfolio selon le self.ratio
     
-    def lookout(self, amount, current_step, type='Equity'):
-        pass
-        #returns the Asset(s) whose value at a given step of time is the closest to the desired amount 
+    def _increase_(self, amount, current_step, asset_type='Equity'):
+        if(asset_type == 'Equity'):
+            self.portfolio.append(Equity(value=1, volume=amount,\
+                                         time_horizon=self.time_horizon,\
+                                         starting_point=current_step))
+        if(asset_type == 'Bond'):
+            self.portfolio.append(Bond(value=1, volume=amount,\
+                                       time_horizon=self.time_horizon,\
+                                       starting_point=current_step))
+        if(asset_type == 'Cash'):
+            self.portfolio.append(Cash(value=1, volume=amount,\
+                                       time_horizon=self.time_horizon,\
+                                       starting_point=current_step))
         
+    def _decrease_(self, amount, current_step, asset_type='Equity'):
+        tmp = 0
+        while(tmp < amount):
+            e = self._lookout_(amount=amount, current_step=current_step, asset_type=asset_type)
+            val = e.value.loc[current_step, 'Market Value'] * e.volume.loc[current_step, 'Volume']
+            if(val >= amount):
+                tmp += e.sell(current_step=current_step, amount=amount)
+            else:
+                tmp += e.cashOut(current_step=current_step)
+    
+    def _rebalance_(self):
+        total = self.computePortfolioVal()
+        err = .025
+        bond_theory = total * self.ratio['Bond']
+        if(abs(bond_theory - self.computeBondVal())>err):
+            pass
+        EQ_theory = total * self.ratio['Equity']
+        if(abs(EQ_theory - self.computeEQVal())>err):
+            pass
+        cash_theory = total * self.ratio['Cash']
+        if(abs(cash_theory - self.computeCashVal())>err):
+            pass
+        # implementer le rebalancement du portfolio selon le self.ratio
+        # on calcule la balance theorique a atteindre
+        # SI ratio > ratio_theorique:
+        #   (lookout(assets)).sell() tant que > ()
+        #   et acheter autre classe d'Asset ?
+    
+    def _lookout_(self, amount, current_step, asset_type='Equity'):
+        """
+            returns the Asset(s) whose value at a given step of time is the closest to the desired amount 
+        """
+        choice = 0
+        selection = []
+        if(type == 'All'):
+            selection = self.portfolio
+        else:
+            for e in self.portfolio:
+                if(type(e).__name__ == asset_type):
+                    selection.append(e)
+        selection.sort(key=lambda x:(x.value.loc[current_step, 'Market Value']*x.volume.loc[current_step, 'Volume']-amount), reverse=False)
+        choice = selection[0]
+        return choice 
+    
     def clear(self):
         """
             clears the portfolio and returns the amount of money invested in it.
         """
-        total_amount = 0
+        flag = 0
         for asset in self.portfolio:
-            total_amount += asset.cashOut(self.time_horizon)
-        return total_amount
+            flag += asset.cashOut(self.time_horizon)
+        return flag
 
 #--------------------------------------------------
 #       Start of the testing part of the code
@@ -153,23 +225,16 @@ class Assets(object):
 def main():
     step = 1
     assets = Assets(wealth=100, time_horizon=50) 
-    for i in range(step,assets.time_horizon):
-        assets.update(i)
-    assets.clear()
+#    print(assets.computeCashVal)
+#    print(assets.computeEQVal)
     
-    for asset in assets.portfolio:
-        if(type(asset).__name__=='Cash'):
-            print(asset.value['Value'] * asset.volume['Volume'])
-        else:
-            print(asset.value['Book Value'] * asset.volume['Volume'])
-    assets.computePortfolioVal().plot()
+#    for asset in assets.portfolio:
+#        if(type(asset).__name__=='Cash'):
+#            print(asset.value['Market Value'] * asset.volume['Volume'])
+#        else:
+#            print(asset.value['Book Value'] * asset.volume['Volume'])
+#    assets.computePortfolioVal().plot()
 
-##    
-##    ------------ Save option -----------------
-#    path = r'C:\Users\FR015797\Documents\PyALM_gen\code\alm\balancesheet\assets'
-#    filename = '\save1.csv'
-#    new_file = check.to_csv(path+filename, sep=';')
-#
 
 if __name__ == "__main__":
     main()
