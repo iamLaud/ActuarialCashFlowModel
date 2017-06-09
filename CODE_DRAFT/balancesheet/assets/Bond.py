@@ -53,7 +53,7 @@ class Bond(Asset):
     """
     def __init__(self, face_value=1, coupon=0, MAX_MATURITY=10, \
                  rating="AAA", default_proba=0, \
-                 currency="Euro", value=1, return_rate=.01, volume=0,\
+                 currency="Euro", value=1, return_rate=.003, volume=0,\
                  time_horizon=25, starting_point=1): 
         self.starting_point = starting_point
         self.time_horizon = time_horizon
@@ -87,7 +87,7 @@ class Bond(Asset):
     def updateValue(self, current_step): # implementer l'amortissement des Bonds
 #        coupon_value = self.return_rate.loc[current_step, 'RRate'] * self.value.loc[1, 'Face Value']
         self.value.loc[current_step:self.time_horizon, 'Book Value'] = self.value.loc[current_step, 'Book Value'] * (1 + self.return_rate.loc[current_step, 'RRate'])
-        self.value.loc[current_step:self.time_horizon, 'Face Value'] = self.value.loc[current_step, 'Face Value'] * (1 + self.return_rate.loc[current_step, 'RRate']) 
+        self.value.loc[current_step:self.time_horizon, 'Market Value'] = self.value.loc[current_step, 'Market Value'] * (1 + self.return_rate.loc[current_step, 'RRate']) 
         # ajouter le versement des dividendes
         
     def cashOut(self, current_step):
@@ -98,7 +98,7 @@ class Bond(Asset):
    
     def sell(self, amount, current_step):
         assert(amount <= self.volume.loc[current_step, 'Volume'] * self.value.loc[current_step, 'Market Value'])
-        self.volume.loc[current_step:self.time_horizon, 'Volume'] -= amount/self.value.loc[current_step, 'Market Value']
+        self.volume.loc[current_step+1:self.time_horizon, 'Volume'] -= amount/self.value.loc[current_step, 'Market Value']
         return amount*self.value.loc[current_step, 'Market Value']
         #only works for now with value=1 - translates the indivisibility state of the assets
         

@@ -55,7 +55,7 @@ class Asset(object):
         
     def sell(self, amount, current_step):
         assert(amount <= self.volume.loc[current_step, 'Volume'] * self.value.loc[current_step, 'Market Value'])
-        self.volume.loc[current_step, 'Volume'] -= amount/self.value.loc[current_step, 'Market Value']
+        self.volume.loc[current_step+1:self.time_horizon, 'Volume'] -= amount/self.value.loc[current_step, 'Market Value']
         return amount*self.value.loc[current_step, 'Market Value']
         #only works for now with value=1 - translates the indivisibility state of the assets
         

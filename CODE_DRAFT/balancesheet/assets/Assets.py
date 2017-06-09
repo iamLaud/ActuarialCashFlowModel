@@ -155,43 +155,56 @@ class Assets(object):
         if(asset_type == 'Equity'):
             self.portfolio.append(Equity(value=1, volume=amount,\
                                          time_horizon=self.time_horizon,\
-                                         starting_point=current_step))
+                                         starting_point=current_step+1))
         if(asset_type == 'Bond'):
             self.portfolio.append(Bond(value=1, volume=amount,\
                                        time_horizon=self.time_horizon,\
-                                       starting_point=current_step))
+                                       starting_point=current_step+1))
         if(asset_type == 'Cash'):
             self.portfolio.append(Cash(value=1, volume=amount,\
                                        time_horizon=self.time_horizon,\
-                                       starting_point=current_step))
+                                       starting_point=current_step+1))
         
     def _decrease_(self, amount, current_step, asset_type='Equity'):
         tmp = 0
         while(tmp < amount):
-            e = self._lookout_(amount=amount, current_step=current_step, asset_type=asset_type)
+            e = self._lookout_(amount=(amount-tmp), current_step=current_step+1, asset_type=asset_type)
             val = e.value.loc[current_step, 'Market Value'] * e.volume.loc[current_step, 'Volume']
-            if(val >= amount):
-                tmp += e.sell(current_step=current_step, amount=amount)
+            if(val > (amount-tmp)):
+                tmp += e.sell(current_step=current_step, amount=(amount-tmp))
             else:
                 tmp += e.cashOut(current_step=current_step)
-    
-    def _rebalance_(self):
+
+    def _rebalance_(self, current_step):
+        """
+            will rebalance the current composition of the portfolio in compliance with the theoretical ratios
+        """
         total = self.computePortfolioVal()
-        err = .025
-        bond_theory = total * self.ratio['Bond']
-        if(abs(bond_theory - self.computeBondVal())>err):
-            pass
+        err = 0.025
         EQ_theory = total * self.ratio['Equity']
-        if(abs(EQ_theory - self.computeEQVal())>err):
-            pass
+        bond_theory = total * self.ratio['Bond']
         cash_theory = total * self.ratio['Cash']
-        if(abs(cash_theory - self.computeCashVal())>err):
-            pass
-        # implementer le rebalancement du portfolio selon le self.ratio
-        # on calcule la balance theorique a atteindre
-        # SI ratio > ratio_theorique:
-        #   (lookout(assets)).sell() tant que > ()
-        #   et acheter autre classe d'Asset ?
+#       ------------- CHECK THE BOND COMPOSITION -------------------
+        tmp = bond_theory.loc[current_step, 'Portfolio Value'] - self.computeBondVal().loc[current_step, 'Bond Total Value']
+        if(abs(tmp)>err):
+            if(tmp>err):
+                self._increase_(amount=abs(tmp), current_step=current_step, asset_type='Bond')
+            if(tmp<err):
+                self._decrease_(amount=abs(tmp), current_step=current_step, asset_type='Bond')
+#       ------------- CHECK THE EQUITY COMPOSITION -------------------        
+        tmp = EQ_theory.loc[current_step, 'Portfolio Value'] - self.computeEQVal().loc[current_step, 'EQ Total Value']
+        if(abs(tmp)>err):
+            if(tmp>err):
+                self._increase_(amount=abs(tmp), current_step=current_step, asset_type='Equity')
+            if(tmp<err):
+                self._decrease_(amount=abs(tmp), current_step=current_step, asset_type='Equity')
+#       ------------- CHECK THE CASH COMPOSITION -------------------
+        tmp = cash_theory.loc[current_step, 'Portfolio Value'] - self.computeCashVal().loc[current_step, 'Cash Total Value']
+        if(abs(tmp)>err):
+            if(tmp>err):
+                self._increase_(amount=abs(tmp), current_step=current_step, asset_type='Cash')
+            if(tmp<err):
+                self._decrease_(amount=abs(tmp), current_step=current_step, asset_type='Cash')
     
     def _lookout_(self, amount, current_step, asset_type='Equity'):
         """
@@ -199,14 +212,17 @@ class Assets(object):
         """
         choice = 0
         selection = []
-        if(type == 'All'):
+        if(asset_type == 'All'):
             selection = self.portfolio
         else:
             for e in self.portfolio:
                 if(type(e).__name__ == asset_type):
                     selection.append(e)
-        selection.sort(key=lambda x:(x.value.loc[current_step, 'Market Value']*x.volume.loc[current_step, 'Volume']-amount), reverse=False)
-        choice = selection[0]
+        selection.sort(key=lambda x:abs(x.value.loc[current_step, 'Market Value']*x.volume.loc[current_step, 'Volume']-amount), reverse=False)
+        i = 0
+        while(selection[i].value.loc[current_step, 'Market Value']*selection[i].volume.loc[current_step, 'Volume'] == 0 and i<len(selection)):
+            i += 1 # on exclut les assets vendus dont l'ecart absolu serait le minimum
+        choice = selection[i]
         return choice 
     
     def clear(self):
@@ -223,18 +239,37 @@ class Assets(object):
 #--------------------------------------------------
 #
 def main():
-    step = 1
-    assets = Assets(wealth=100, time_horizon=50) 
-#    print(assets.computeCashVal)
-#    print(assets.computeEQVal)
+    assets = Assets(wealth=1000, time_horizon=50) 
+    for i in range(1, assets.time_horizon):
+        assets.update(i)
+        if(i==15):
+            assets._decrease_(amount=400, current_step=i, asset_type='Bond')
+#        if(i == 40):
+            assets._rebalance_(current_step=i)
+#        if(i%10 == 0):
+#           assets._increase_(amount=100, current_step=i, asset_type='Cash')
+#           assets._increase_(amount=100, current_step=i, asset_type='Equity') 
+#        if(i%10 == 0):
+        
     
-#    for asset in assets.portfolio:
-#        if(type(asset).__name__=='Cash'):
-#            print(asset.value['Market Value'] * asset.volume['Volume'])
-#        else:
-#            print(asset.value['Book Value'] * asset.volume['Volume'])
-#    assets.computePortfolioVal().plot()
-
+#    ------------- PLOT RESULTS ---------------------------------
+    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
+    assets.computePortfolioVal().plot(ax=df)
+    assets.computeBondVal().plot(ax=df)
+    assets.computeEQVal().plot(ax=df)
+    assets.computeCashVal().plot(ax=df)
+    
+    for k in range(1, assets.time_horizon):
+        if(k%5 == 0):
+            df.axvline(k, color='k', linewidth=.5, linestyle='--')
+            df.axvline(k+1, color='r', linewidth=.5, linestyle='--')
+        if(k%10 == 0):
+            df.axvline(k, color='r', linewidth=.5, linestyle='--')
+            
+#    df.axvline(11, color='k', linewidth=.5, linestyle='--')
+#    df.axvline(12, color='k', linewidth=.5, linestyle='--')
+#    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
+    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
 if __name__ == "__main__":
     main()
