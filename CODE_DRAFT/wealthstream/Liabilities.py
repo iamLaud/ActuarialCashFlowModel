@@ -108,7 +108,7 @@ class Liabilities(object):
                                              starting_point=current_step,\
                                              time2expiration=20))    
     
-    def update(self, current_step, cash_flow_in, cash_flow_out, available_wealth, mode='mid'):
+    def update(self, current_step, cash_flow_in=None, cash_flow_out=None, available_wealth=None, mode='mid'):
         # on actualise ici les contrats d'assurance contenus dans math_provision
         if(mode == 'mid'): # anciennete et age
             for e in self.math_provision:
@@ -144,6 +144,25 @@ class Liabilities(object):
 def main():
     passif = Liabilities()
 
-    
+    #    ------------- PLOT RESULTS ---------------------------------
+#    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
+#    assets.computePortfolioVal().plot(ax=df)
+#    assets.computeBondVal().plot(ax=df)
+#    assets.computeEQVal().plot(ax=df)
+#    assets.computeCashVal().plot(ax=df)
+#    
+#    for k in range(1, assets.time_horizon):
+#        if(k%5 == 0):
+#            df.axvline(k, color='k', linewidth=.5, linestyle='--')
+#            df.axvline(k+1, color='r', linewidth=.5, linestyle='--')
+#        if(k%10 == 0):
+#            df.axvline(k, color='r', linewidth=.5, linestyle='--')
+#            
+##    df.axvline(11, color='k', linewidth=.5, linestyle='--')
+##    df.axvline(12, color='k', linewidth=.5, linestyle='--')
+##    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
+#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+
 if __name__ == "__main__":
     main()

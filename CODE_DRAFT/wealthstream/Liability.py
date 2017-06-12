@@ -22,7 +22,7 @@ import numpy as np
 #--------------------------------------------------
 
 class Liability(object):
-    def __init__(self, value=1, time_horizon=50, starting_point=1, time2expiration=20):
+    def __init__(self, value=1, time_horizon=50, starting_point=1, time2expiration=30):
         self.time_horizon = time_horizon
         self.starting_point = starting_point
         self.time2expiration = time2expiration
@@ -36,23 +36,31 @@ class Liability(object):
         
         
     def buyBack(self, current_step, percentage=1, amount=0):
-        assert(amount <= self.value.loc[current_step, 'Contract Value'])
         flag = percentage * self.value.loc[current_step, 'Contract Value'] + amount
-        if(current_step<self.time_horizon):
-            self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Contract Value'] -= flag
+        if(flag <= self.value.loc[current_step, 'Contract Value']):
+            if(current_step<self.time_horizon):
+                self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Contract Value'] -= flag
         return flag 
    
     def updateValue(self, current_step): # update auto des contrats (actions de vieillissement only)
-        self.value.loc[current_step:self.time_horizon, 'Contract Value'] -= 0 # Implementer les sorties dues aux deces et rachats structurels
+#        ----- SIMULATED DATA FOR NOW ---------------
+        mean = 0
+        std = .05
+        noise = float(np.random.normal(mean, std, size=1)*self.value.loc[current_step, 'Contract Value'])
+#        ----------------------------------------------
+        flag = self.buyBack(current_step, percentage=0, amount=min(noise, self.value.loc[current_step, 'Contract Value'])) # Implementer les sorties dues aux deces et rachats structurels
         # charger et appliquer ici les formules des tables de morta et rachats
         # 1 mort ou 1 rachat = 1 appel de buyBack()
-        
+        return flag 
+    
     def update(self, current_step): # update auto des contrats (Actions de vieillissement + application des regles ALM)
         flag = 0
-        self.updateValue(current_step) # on vieillit les contrats avant d'effectuer les sorties
-        self.time2expiration -= 1
+        if(self.value.loc[current_step, 'Contract Value'] > 0):
+            self.time2expiration -= 1
         if(self.time2expiration == 0):
             flag = self.buyBack(current_step)
+        else:
+            flag = self.updateValue(current_step) # on vieillit les contrats avant d'effectuer les sorties
         return flag
         # on met à jour le volume selon les rachats et deces associes a ce contrat
     
@@ -65,10 +73,18 @@ class Liability(object):
 #--------------------------------------------------
 
 #def main():
-#    liability = Liability()
-#    lia2 = Liability(value=2, starting_point=5)
-#    print(liability.value['Contract Value'] +lia2.value['Contract Value'])
-#    
-#    
+#    lia1 = Liability(value=100, time2expiration=20)
+#    lia2 = Liability(value=100, starting_point=10, time2expiration=20)
+#    lia3 = Liability(value=100, starting_point=25, time2expiration=30)
+#    for i in range(1, lia1.time_horizon+1):
+#        lia1.update(i)
+#        lia2.update(i)
+#        lia3.update(i)
+#    df = lia1.value.plot()
+#    lia2.value.plot(ax=df)
+#    lia3.value.plot(ax=df)
+#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+#
+#
 #if __name__ == "__main__":
 #    main()

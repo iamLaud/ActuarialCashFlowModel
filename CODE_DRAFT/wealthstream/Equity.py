@@ -71,8 +71,8 @@ class Equity(Asset):
             capitalizes the Equity over a period of time
         """
        # ------------------- TEST A ENLEVER ------------------
-        mean = 0
-        std = .2
+        mean = -.01
+        std = .01
         noise = np.random.normal(mean, std, size=1)
 #        noise = 0
         # ----------------------------------------------------
@@ -130,13 +130,16 @@ class Equity(Asset):
 #       Start of the testing part of the code
 #--------------------------------------------------
 
-#def main():
-#    equity = Equity(return_rate=.01, volume=100, time_horizon=20)
-#    print(equity.volume)
-#    
-#    equity.sell(25, 15)
-#    print(equity.volume)
-#    
-#if __name__ == "__main__":
-#    main()
+def main():
+    equity = Equity(return_rate=.01, volume=100, time_horizon=50)
+#    print(equity.value)
+    for i in range(1, equity.time_horizon):
+        equity.update(i)
+#    print(equity.value)
+    equity.computePotential()   
+#    print(equity.potential)
+    df = equity.potential.plot(title="PMVL de l'equity au cours de la simulation")
+
+if __name__ == "__main__":
+    main()
     

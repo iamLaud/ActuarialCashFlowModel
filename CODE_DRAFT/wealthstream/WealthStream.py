@@ -109,11 +109,12 @@ class WealthStream():
 #--------------------------------------------------
 
 def main():
-    stream1 = WealthStream(value=7)
+    stream1 = WealthStream(value=3)
     stream2 = WealthStream(value=1)
-    stream1.transferWealth(other_wealthstream=stream2, amount=6, current_step=5, direction=-1)
-    print(stream1.value)
-    print(stream2.value)
+    stream1.transferWealth(other_wealthstream=stream2, amount=2, current_step=5, direction=-1)
+    df = stream1.value.plot()
+    stream2.value.plot(ax=df)
+    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
     
 if __name__ == "__main__":
     main()

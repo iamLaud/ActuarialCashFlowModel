@@ -138,19 +138,6 @@ class Assets(object):
                 value['Equities PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
         return value
     
-    def update(self, current_step):
-        """
-            updates the value of the portfolio over a period of time
-        """
-        for e in self.portfolio:
-            e.update(current_step)
-            if(e.flag != 0):
-                self.portfolio.append(Bond(value=1, volume=e.flag,\
-                                 starting_point=current_step, time_horizon=self.time_horizon))
-                self.portfolio[-1].volume.loc[current_step, 'Volume'] = 0  # ----------- ATTENTION -------------
-                e.flag = 0 
-                # on réinvestit automatiquement le nominal
-    
     def _increase_(self, amount, current_step, asset_type='Equity'):
         if(asset_type == 'Equity'):
             self.portfolio.append(Equity(value=1, volume=amount,\
@@ -224,7 +211,21 @@ class Assets(object):
             i += 1 # on exclut les assets vendus dont l'ecart absolu serait le minimum
         choice = selection[i]
         return choice 
-    
+  
+    def update(self, current_step):
+        """
+            updates the value of the portfolio over a period of time
+        """
+        for e in self.portfolio:
+            e.update(current_step)
+            if(e.flag != 0):
+                self.portfolio.append(Bond(value=1, volume=e.flag,\
+                                 starting_point=current_step, time_horizon=self.time_horizon))
+                self.portfolio[-1].volume.loc[current_step, 'Volume'] = 0  # ----------- ATTENTION -------------
+                e.flag = 0 
+            e.computePotential()
+                # on réinvestit automatiquement le nominal
+                
     def clear(self):
         """
             clears the portfolio and returns the amount of money invested in it.
@@ -242,34 +243,35 @@ def main():
     assets = Assets(wealth=1000, time_horizon=50) 
     for i in range(1, assets.time_horizon):
         assets.update(i)
-        if(i==15):
-            assets._decrease_(amount=400, current_step=i, asset_type='Bond')
+#        if(i==15):
+#            assets._decrease_(amount=400, current_step=i, asset_type='Bond')
 #        if(i == 40):
-            assets._rebalance_(current_step=i)
+#            assets._rebalance_(current_step=i)
 #        if(i%10 == 0):
 #           assets._increase_(amount=100, current_step=i, asset_type='Cash')
 #           assets._increase_(amount=100, current_step=i, asset_type='Equity') 
 #        if(i%10 == 0):
-        
-    
+    for asset in assets.portfolio:
+        if(type(asset).__name__ == 'Equity'):
+            asset.potential.plot()
 #    ------------- PLOT RESULTS ---------------------------------
-    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
-    assets.computePortfolioVal().plot(ax=df)
-    assets.computeBondVal().plot(ax=df)
-    assets.computeEQVal().plot(ax=df)
-    assets.computeCashVal().plot(ax=df)
-    
-    for k in range(1, assets.time_horizon):
-        if(k%5 == 0):
-            df.axvline(k, color='k', linewidth=.5, linestyle='--')
-            df.axvline(k+1, color='r', linewidth=.5, linestyle='--')
-        if(k%10 == 0):
-            df.axvline(k, color='r', linewidth=.5, linestyle='--')
-            
+#    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
+#    assets.computePortfolioVal().plot(ax=df)
+#    assets.computeBondVal().plot(ax=df)
+#    assets.computeEQVal().plot(ax=df)
+#    assets.computeCashVal().plot(ax=df)
+#    
+#    for k in range(1, assets.time_horizon):
+#        if(k%5 == 0):
+#            df.axvline(k, color='k', linewidth=.5, linestyle='--')
+#            df.axvline(k+1, color='r', linewidth=.5, linestyle='--')
+#        if(k%10 == 0):
+#            df.axvline(k, color='r', linewidth=.5, linestyle='--')
+#            
 #    df.axvline(11, color='k', linewidth=.5, linestyle='--')
 #    df.axvline(12, color='k', linewidth=.5, linestyle='--')
 #    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
-    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
 if __name__ == "__main__":
     main()

@@ -27,8 +27,8 @@ class Provision(object):
     """
     
     def __init__(self, value=1, time_horizon=50, starting_point=1,\
-                 duration=20, limit=.2, recovery_frequency=0,\
-                 recovery_percentage=0, recovery_mode='percentage'): 
+                 duration=50, limit_sup=.2, recovery_frequency=0,\
+                 recovery_percentage=0.334, recovery_mode='percentage'): 
         self.time_horizon = time_horizon
         self.starting_point = starting_point
         self.duration = duration
@@ -37,12 +37,13 @@ class Provision(object):
         self.value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Value']) 
         self.value.loc[self.starting_point:self.time_horizon, 'Value'] = value
 
-        self.limit = limit
+        self.limit_sup = limit_sup
         self.recovery_mode = recovery_mode
         self.recovery_frequency = recovery_frequency
         self.recovery_percentage = recovery_percentage
         
     def computeProvision(self, WStream_in, current_step, type='PPB'):
+        # computes the inf limit of the provisions
         flag = 0
         if(type == 'PPB'):
             pass # implementer ici la formule de calcul de la PPB
@@ -55,15 +56,21 @@ class Provision(object):
         return flag
         # updates the self.value
      
-    def update(self, current_step): # on implemente ici les regles de mise a jour auto
+    def update(self, current_step, amount_wealth): # on implemente ici les regles de mise a jour auto
         # on actualise la provision avec les reprises
         flag = 0
+        
         if(self.recovery_mode == 'percentage'):
-            flag = self.recovery_percentage * \
-                self.value.loc[self.starting_point:self.time_horizon, 'Value']
-            self.value.loc[self.starting_point:self.time_horizon, 'Value'] -= flag            
+            flag = self.recovery_percentage * self.value.loc[current_step, 'Value']
+            self.recover(amount=min(flag, self.value.loc[current_step, 'Value']), current_step=current_step)           
         elif(self.recovery_mode == 'frequency'):
             pass
+        
+        if(amount_wealth*self.limit_sup < self.value.loc[current_step, 'Value']):
+            tmp = self.value.loc[current_step, 'Value'] - amount_wealth*self.limit_sup
+            self.recover(amount=tmp, current_step=current_step)
+            flag += tmp
+            
         return flag
     
     def recover(self, amount, current_step):
@@ -74,18 +81,21 @@ class Provision(object):
         self.value.loc[current_step:self.time_horizon, 'Value'] += amount
         # we receive some or all the provision from a Wealthstream
                
-    def __str__(self):
-        return "The value of the provision per year of simulation is \n" + (self.get_provision())
-    
+      
     
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
 
 #    def main():
-#        prov1 = Provision()
-#        prov2 = Provision(value=20, starting_point=5)
-#        print(prov1.value['Value'] +prov2.value['Value'])
+#        prov1 = Provision(value=1000)
+#        prov2 = Provision(value=800, starting_point=20)
+#        for i in range(1, prov1.time_horizon+1):
+#            prov1.update(i, amount_wealth=5000)
+##            prov1.allocate(amount=2000, current_step=i)
+#            prov2.update(i, amount_wealth=5000)
+#        df = prov1.value.plot()
+#        prov2.value.plot(ax=df)
 #        
 #        
 #    if __name__ == "__main__":

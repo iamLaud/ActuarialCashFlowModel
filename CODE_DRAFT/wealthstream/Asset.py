@@ -42,7 +42,7 @@ class Asset(object):
         self.return_rate.loc[:, 'RRate'] = rates.loc[:, 'RRate']
       
     def computePotential(self):
-        raise NotImplementedError("Subclass must implement abstract method")
+        pass
     
     def updateValue(self):
         raise NotImplementedError("Subclass must implement abstract method")
