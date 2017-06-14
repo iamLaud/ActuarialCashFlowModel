@@ -22,11 +22,17 @@ class Provision(object):
     """A class modeling the structure of a provision as used in the ALM model:
 
     Attributes:
-        value: A value of the provision over time (DataFrame of Float)
-        time_horizon: The time horizon over which the simulation takes place (integer).
+        value: The value of the Provision over time (DataFrame of Float)
+        time_horizon: The time horizon over which the simulation takes place (Integer).
+        starting_point: The time step when the Provision is created (Integer)
+        duration: The life duration of the Provision (Integer)
+        limit_sup: The sup limit percentage of the authorized Provision.
+        recovery_frequency: The frequency of recovery of the Provision (Float)
+        recovery_percentage: The percentage of recovery at each time step (Float)
+        recovery_mode: The mode of recovery of the Provision (percentage or frequency)
     """
     
-    def __init__(self, value=1, time_horizon=50, starting_point=1,\
+    def __init__(self, value=0, time_horizon=50, starting_point=1,\
                  duration=50, limit_sup=.2, recovery_frequency=0,\
                  recovery_percentage=0.334, recovery_mode='percentage'): 
         self.time_horizon = time_horizon
@@ -42,61 +48,136 @@ class Provision(object):
         self.recovery_frequency = recovery_frequency
         self.recovery_percentage = recovery_percentage
         
-    def computeProvision(self, WStream_in, current_step, type='PPB'):
+    def computeProvision(self, wealth, current_step, type='PPB'):
+        """Based on a WealthStream point value (wealth), it computes the theoretical 
+            value of the Provision at time current_step of the simulation.
+            The default setting is the computation of the value of the
+            Profit Sharing Provision (PPB in French).
+            
+        Parameters:
+            wealth: a WealthStream point value (Float)
+            current_step: the index of the time step (Integer)
+            type: determines the type of computation (String)
+                type = {'PPB', 'PRE', 'Reserve de cap', 'Fonds propres'}                     
+        """
         # computes the inf limit of the provisions
-        flag = 0
         if(type == 'PPB'):
-            pass # implementer ici la formule de calcul de la PPB
+            # here wealth = Benefits 
+           flag = wealth * 0.85
+            # for now: PPB_allocation = 85% of profits
+           self.allocate(amount=flag, current_step=current_step)
         elif(type == 'PRE'):
-            pass # implementer ici la formule de calcul de la PRE
+            # here wealth = Potential_Gain&Loss[EQ + Cash]
+            if(current_step == 1):
+                flag = 1/3 * wealth
+                self.allocate(amount=flag, current_step=current_step)
+                # for now: we initialize the PRE as a third of the value of the (Cash+EQ) Potential Losses 
+            else:
+                dot = -min(wealth + self.value.loc[current_step-1, 'Value'], 0)
+                rep = min(max(wealth- self.value.loc[current_step-1, 'Value'], 0), self.value.loc[current_step-1, 'Value'])
+                flag = self.value.loc[current_step-1, 'Value'] + dot - rep
+                self.allocate(amount=flag, current_step=current_step)
+                # AXA Formula:
+                #        Reprise_PRE = Min(Max(PMVL - PRE, 0), PRE)
+                #        Dotation_PRE = -Min(PMVL + PRE, 0)
+                #        PRE_{t+1} = PRE_{t} + Dotation_PRE - Reprise_PRE
         elif(type == 'Reserve de cap'):
-            pass # implementer ici la formule de la CapRes
-        elif('Fonds propres'):
-            pass # implementer ici la formule de calcul des FP
+            # here wealth = Potential_Gain&Loss[Bond]
+            if(current_step == 1):
+                flag = 1/3 * wealth
+                self.allocate(amount=flag, current_step=current_step)
+                # for now: we initialize the CapRes as a third of the value of the Bond Potential Losses 
+            else:
+                flag = max(0, self.value.loc[current_step-1, 'Value'] + wealth)
+                self.allocate(amount=flag, current_step=current_step)
+                # Formula:
+                #        RC(t) = Max(0, RC_{t-1} + PMVR[Bond](t))
+        elif(type == 'Fonds propres'):
+            flag =  wealth
+            self.allocate(amount=flag, current_step=current_step)
+            # le calcul des FP se fait ici a l'exterieur dans le WStream: en effet, il s'agit uniquement de la soustraction Actifs - Provisions
+            # il est donc plus facile de l'effectuer via les WStream directement et d'uniquement l'affecter ici afin de conserver la méthodologie
+            # a voir ulterieurement si on la conserve
         return flag
-        # updates the self.value
+        # we return the allocated amount in order to send the information upwards to the other WStreams
      
-    def update(self, current_step, amount_wealth): # on implemente ici les regles de mise a jour auto
+    def update(self, current_step, wealth=0): # on implemente ici les regles de mise a jour auto
         # on actualise la provision avec les reprises
-        flag = 0
-        
+        """
+            Method used to automatically update the Provision over time.
+            Returns the amount of money recovered over the time step.
+            
+            If the Provision is on 'percentage' mode: it automatically recovers a fixed percentage
+            of the Provision at each time step.
+            If the Provision is on 'frequency' mode: it automatically recovers an amount of the Provision
+            at predetermined time steps. (not implemented yet)
+            The wealth is the available_wealth at current_step.
+        """
+        flag = 0      
         if(self.recovery_mode == 'percentage'):
-            flag = self.recovery_percentage * self.value.loc[current_step, 'Value']
+            flag += self.recovery_percentage * self.value.loc[current_step, 'Value']
             self.recover(amount=min(flag, self.value.loc[current_step, 'Value']), current_step=current_step)           
         elif(self.recovery_mode == 'frequency'):
-            pass
-        
-        if(amount_wealth*self.limit_sup < self.value.loc[current_step, 'Value']):
-            tmp = self.value.loc[current_step, 'Value'] - amount_wealth*self.limit_sup
+            pass    
+        if(wealth != 0 and wealth*self.limit_sup < self.value.loc[current_step, 'Value']):
+            tmp = self.value.loc[current_step, 'Value'] - wealth*self.limit_sup
             self.recover(amount=tmp, current_step=current_step)
-            flag += tmp
-            
+            flag += tmp      
         return flag
     
-    def recover(self, amount, current_step):
-        # we use some or all the provision to feed a Wealthstream
-        self.value.loc[current_step:self.time_horizon, 'Value'] -= amount
-        
+    def recover(self, current_step, amount, percentage=0):
+        """
+            Method used to recover some or all the money in the Provision
+        """
+        # we use some or all the provision to feed an outer Wealthstream
+        flag = percentage * self.value.loc[current_step, 'Value'] + amount
+        if(flag <= self.value.loc[current_step, 'Value']):
+            if(current_step <= self.time_horizon):
+                self.value.loc[np.arange(current_step,self.time_horizon+1), 'Value'] -= flag
+        return flag 
+    
     def allocate(self, amount, current_step):
+        """
+            Method used to allocate new funds to the Provision
+        """
         self.value.loc[current_step:self.time_horizon, 'Value'] += amount
         # we receive some or all the provision from a Wealthstream
-               
-      
+                   
+#%%
     
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
 
-#    def main():
-#        prov1 = Provision(value=1000)
-#        prov2 = Provision(value=800, starting_point=20)
-#        for i in range(1, prov1.time_horizon+1):
-#            prov1.update(i, amount_wealth=5000)
-##            prov1.allocate(amount=2000, current_step=i)
-#            prov2.update(i, amount_wealth=5000)
-#        df = prov1.value.plot()
-#        prov2.value.plot(ax=df)
-#        
-#        
-#    if __name__ == "__main__":
-#        main()    
+    def main():
+        prov1 = Provision(value=0, time_horizon=50)
+        
+        prov1.computeProvision(wealth=3000, current_step=1, type='Reserve de cap')
+        prov2 = Provision(value=0)
+        prov2.value.loc[1, 'Value'] = 1000
+
+
+#        # ------------------- TEST A ENLEVER ------------------
+        mean = 0
+        std = 1000
+        # ----------------------------------------------------
+        
+        for i in range(2,prov1.time_horizon+1):
+            noise = np.random.normal(mean, std, size=1)
+            prov1.computeProvision(current_step=i, wealth=noise, type='Reserve de cap')
+            prov1.update(current_step=i, wealth=noise)
+            prov2.value.loc[i, 'Value'] = noise
+            
+        df = prov1.value.plot(title='Analyse de la corrélation entre performance sur les Bonds et CapRes')
+        prov2.value.plot(ax=df)
+        df.axhline(y=0, c="red", linewidth=1, zorder=0)
+        df.axvline(10, color='k', linewidth=.5, linestyle='--')
+        df.axvline(20, color='k', linewidth=.5, linestyle='--')
+        df.axvline(30, color='k', linewidth=.5, linestyle='--')
+        df.axvline(40, color='k', linewidth=.5, linestyle='--')
+        df.legend(["CapRes", "Performances des Bonds"], loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+        
+        
+    if __name__ == "__main__":
+        main()    

@@ -251,9 +251,10 @@ def main():
 #           assets._increase_(amount=100, current_step=i, asset_type='Cash')
 #           assets._increase_(amount=100, current_step=i, asset_type='Equity') 
 #        if(i%10 == 0):
-    for asset in assets.portfolio:
-        if(type(asset).__name__ == 'Equity'):
-            asset.potential.plot()
+#    for asset in assets.portfolio:
+#        if(type(asset).__name__ == 'Equity'):
+#            asset.potential.plot()
+
 #    ------------- PLOT RESULTS ---------------------------------
 #    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
 #    assets.computePortfolioVal().plot(ax=df)

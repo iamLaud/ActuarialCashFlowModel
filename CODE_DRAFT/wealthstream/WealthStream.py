@@ -8,8 +8,8 @@ Created on Tue Apr 25 11:10:06 2017
 #--------------------------------------------------
 #           Project packages
 #--------------------------------------------------
-#import Assets as Assets
-#import Liabilities as Liabilities
+import Assets as Assets
+import Liabilities as Liabilities
 #--------------------------------------------------
 #           Python packages
 #--------------------------------------------------
@@ -76,7 +76,7 @@ class WealthStream():
             if(type(asset).__name__ == 'Bond'):
                 self.value.loc[:, 'Stream Value'] += asset.value.loc[:, 'Market Value'] * asset.volume.loc[:, 'Volume']
             elif(type(asset).__name__ == 'Equity'):
-                self.value.loc[: 'Stream Value'] += asset.value.loc[:, 'Market Value'] * asset.volume.loc[:, 'Volume']
+                self.value.loc[:, 'Stream Value'] += asset.value.loc[:, 'Market Value'] * asset.volume.loc[:, 'Volume']
             elif(type(asset).__name__ == 'Cash'):
                 self.value.loc[:, 'Stream Value'] += asset.value.loc[:, 'Market Value'] * asset.volume.loc[:, 'Volume']
         
@@ -108,13 +108,13 @@ class WealthStream():
 #       Start of the testing part of the code
 #--------------------------------------------------
 
-def main():
-    stream1 = WealthStream(value=3)
-    stream2 = WealthStream(value=1)
-    stream1.transferWealth(other_wealthstream=stream2, amount=2, current_step=5, direction=-1)
-    df = stream1.value.plot()
-    stream2.value.plot(ax=df)
-    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
-    
-if __name__ == "__main__":
-    main()
+#def main():
+#    stream1 = WealthStream(value=3)
+#    stream2 = WealthStream(value=1)
+#    stream1.transferWealth(other_wealthstream=stream2, amount=2, current_step=5, direction=-1)
+#    df = stream1.value.plot(title='Evolution de la valeur du WealthStream au cours de la simulation')
+#    stream2.value.plot(ax=df)
+#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+#    
+#if __name__ == "__main__":
+#    main()

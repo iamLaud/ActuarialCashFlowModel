@@ -34,9 +34,10 @@ class Liabilities(object):
         if(math_provision != None):
             self.math_provision.append(math_provision)
         else:
-            self.math_provision.append(Liability(value=600))  
-            self.math_provision.append(Liability(value=60))          
-            self.math_provision.append(Liability(value=6))          
+            self.math_provision.append(Liability(value=6, starting_point=1))          
+            self.math_provision.append(Liability(value=600, time2expiration=15))  
+            self.math_provision.append(Liability(value=60, starting_point=20))          
+
 
             # parametrer la provision
 # ---------------------------------------------------------                   
@@ -85,10 +86,12 @@ class Liabilities(object):
         """
             returns the Liability whose time2expiry at a given step of time is the shortest
         """
-        choice = 0
         selection = self.math_provision
-        selection.sort(key=lambda x:(x.time2expiration), reverse=False)
-        choice = selection[0]
+        selection.sort(key=lambda x:x.time2expiration, reverse=False)
+        i = 0
+        while(selection[i].value.loc[current_step, 'Contract Value'] == 0 and i<len(selection)):
+            i += 1 # on exclut les assets vendus dont l'ecart absolu serait le minimum
+        choice = selection[i]
         return choice 
     
     def _decrease_(self, amount, current_step):
@@ -101,7 +104,7 @@ class Liabilities(object):
             else:
                 tmp += e.buyBack(current_step=current_step,\
                                    percentage=1)
-                e.time2expiration = 999999 # +infty
+#                e.time2expiration = 999999 # +infty
                 
     def _increase_(self, amount, current_step): # to increase the amount of Liabilities
         self.math_provision.append(Liability(value=amount, time_horizon=50,\
@@ -113,13 +116,13 @@ class Liabilities(object):
         if(mode == 'mid'): # anciennete et age
             for e in self.math_provision:
                 tmp = e.update(current_step)
-                if(tmp != 0):
-                    cash_flow_out.value.loc[current_step, 'Stream Value'] = tmp
+#                if(tmp != 0):
+#                    cash_flow_out.value.loc[current_step, 'Stream Value'] = tmp
                     #si !=0 on a des sorties de contrats donc on MaJ la WStream des CF_out
-            for key, e in self.other_provisions.items():            
-                tmp = e.update(current_step)
-                if(tmp != 0):
-                    cash_flow_in.value.loc[current_step, 'Stream Value'] = tmp
+#            for key, e in self.other_provisions.items():            
+#                tmp = e.update(current_step)
+#                if(tmp != 0):
+#                    cash_flow_in.value.loc[current_step, 'Stream Value'] = tmp
                     #si !=0 on a des reprises sur dotation on MaJ le CF_in 
                     
         if(mode == 'early'): # rachats, deces, entrees, sorties, taux
@@ -136,6 +139,8 @@ class Liabilities(object):
         flag = 0
         for e in self.math_provision:
             flag += e.buyBack(current_step=self.time_horizon)
+        for e in self.other_provisions:
+            flag += e.recover(current_step=self.time_horizon, percentage=1, amount=0)
         return flag
 #--------------------------------------------------
 #       Start of the testing part of the code
@@ -143,7 +148,14 @@ class Liabilities(object):
 
 def main():
     passif = Liabilities()
+    for i in range(1, passif.time_horizon):
+        passif.update(i)
+        if(i == 5 or i==11 or i==21):
+            passif._lookout_(i).value.plot()
 
+
+        
+        
     #    ------------- PLOT RESULTS ---------------------------------
 #    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
 #    assets.computePortfolioVal().plot(ax=df)
