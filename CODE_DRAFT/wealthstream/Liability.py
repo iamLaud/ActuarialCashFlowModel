@@ -67,7 +67,7 @@ class Liability(object):
         return flag
     
     def __str__(self):
-        return("value: " + self.value.__str__() + "\n")
+        return self.value.__str__()
     
     
 #--------------------------------------------------
@@ -86,7 +86,7 @@ class Liability(object):
 #    lia2.value.plot(ax=df)
 #    lia3.value.plot(ax=df)
 #    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
-#
-#
+
+
 #if __name__ == "__main__":
 #    main()

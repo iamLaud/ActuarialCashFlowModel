@@ -123,21 +123,22 @@ class Bond(Asset):
         self.potential["Potential Gain"] = np.where(self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value'] >0, (self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value']), 0)
         self.potential["Potential Loss"] = np.where(self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value'] <0, (self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value']), 0)
 
-
+    def __str__(self):
+     return (self.value['Market Value']*self.volume['Volume']).__str__()
 
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
 
 #def main():
-#    bond = Bond(value=1, volume=100, starting_point=1)
+#    bond = Bond(value=2, volume=100, starting_point=1)
 #    bond.sell(20, 5)
 #    print(bond.value)
-#    print(bond.volume)
+#    print(bond)
 #    
 #if __name__ == "__main__":
 #    main()
-#    
+    
 
 ##--------------------------------------------------
 #class CP_Bond(Bond):

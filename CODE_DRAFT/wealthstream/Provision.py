@@ -63,7 +63,7 @@ class Provision(object):
         # computes the inf limit of the provisions
         if(type == 'PPB'):
             # here wealth = Benefits 
-           flag = wealth * 0.85
+           flag = wealth * 0.2
             # for now: PPB_allocation = 85% of profits
            self.allocate(amount=flag, current_step=current_step)
         elif(type == 'PRE'):
@@ -101,7 +101,7 @@ class Provision(object):
         return flag
         # we return the allocated amount in order to send the information upwards to the other WStreams
      
-    def update(self, current_step, wealth=0): # on implemente ici les regles de mise a jour auto
+    def update(self, current_step, reference=0): # on implemente ici les regles de mise a jour auto
         # on actualise la provision avec les reprises
         """
             Method used to automatically update the Provision over time.
@@ -119,8 +119,8 @@ class Provision(object):
             self.recover(amount=min(flag, self.value.loc[current_step, 'Value']), current_step=current_step)           
         elif(self.recovery_mode == 'frequency'):
             pass    
-        if(wealth != 0 and wealth*self.limit_sup < self.value.loc[current_step, 'Value']):
-            tmp = self.value.loc[current_step, 'Value'] - wealth*self.limit_sup
+        if(reference != 0 and reference*self.limit_sup < self.value.loc[current_step, 'Value']):
+            tmp = self.value.loc[current_step, 'Value'] - reference*self.limit_sup
             self.recover(amount=tmp, current_step=current_step)
             flag += tmp      
         return flag
@@ -149,35 +149,35 @@ class Provision(object):
 #       Start of the testing part of the code
 #--------------------------------------------------
 
-    def main():
-        prov1 = Provision(value=0, time_horizon=50)
-        
-        prov1.computeProvision(wealth=3000, current_step=1, type='Reserve de cap')
-        prov2 = Provision(value=0)
-        prov2.value.loc[1, 'Value'] = 1000
-
-
-#        # ------------------- TEST A ENLEVER ------------------
-        mean = 0
-        std = 1000
-        # ----------------------------------------------------
-        
-        for i in range(2,prov1.time_horizon+1):
-            noise = np.random.normal(mean, std, size=1)
-            prov1.computeProvision(current_step=i, wealth=noise, type='Reserve de cap')
-            prov1.update(current_step=i, wealth=noise)
-            prov2.value.loc[i, 'Value'] = noise
-            
-        df = prov1.value.plot(title='Analyse de la corrélation entre performance sur les Bonds et CapRes')
-        prov2.value.plot(ax=df)
-        df.axhline(y=0, c="red", linewidth=1, zorder=0)
-        df.axvline(10, color='k', linewidth=.5, linestyle='--')
-        df.axvline(20, color='k', linewidth=.5, linestyle='--')
-        df.axvline(30, color='k', linewidth=.5, linestyle='--')
-        df.axvline(40, color='k', linewidth=.5, linestyle='--')
-        df.legend(["CapRes", "Performances des Bonds"], loc='center left', bbox_to_anchor=(1.0, 0.5))
-
-        
-        
-    if __name__ == "__main__":
-        main()    
+#    def main():
+#        prov1 = Provision(value=0, time_horizon=50, limit_sup=.2)
+#        
+##        prov1.computeProvision(wealth=1000, current_step=1, type='Fonds propres')
+#        prov2 = Provision(value=0)
+##        prov2.value.loc[1, 'Value'] = 1000
+#
+#
+##        # ------------------- TEST A ENLEVER ------------------
+#        mean = 0
+#        std = 100
+#        # ----------------------------------------------------
+#        
+#        for i in range(1,prov1.time_horizon+1):
+#            noise = abs(np.random.normal(mean, std, size=1))
+#            prov1.computeProvision(current_step=i, wealth=noise, type='Fonds propres')
+#            prov1.update(current_step=i, reference=800)
+#            prov2.value.loc[i, 'Value'] = noise
+#            
+#        df = prov1.value.plot(title='Analyse de la corrélation entre performance sur les Bonds et CapRes')
+#        prov2.value.plot(ax=df)
+#        df.axhline(y=0, c="red", linewidth=1, zorder=0)
+#        df.axvline(10, color='k', linewidth=.5, linestyle='--')
+#        df.axvline(20, color='k', linewidth=.5, linestyle='--')
+#        df.axvline(30, color='k', linewidth=.5, linestyle='--')
+#        df.axvline(40, color='k', linewidth=.5, linestyle='--')
+#        df.legend(["FP", "Flux entrant"], loc='center left', bbox_to_anchor=(1.0, 0.5))
+#
+#        
+#        
+#    if __name__ == "__main__":
+#        main()    

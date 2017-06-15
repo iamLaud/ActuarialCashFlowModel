@@ -60,8 +60,7 @@ class Asset(object):
         #only works for now with value=1 - translates the indivisibility state of the assets
         
     def __str__(self):
-        return("value: " + self.value.__str__() + "\n\nvolume: " + str(self.volume) + "\n\nreturn rate: " + self.return_rate.__str__())
-    
+     return (self.value['Market Value']*self.volume['Volume']).__str__()
     
 #--------------------------------------------------
 #       Start of the testing part of the code

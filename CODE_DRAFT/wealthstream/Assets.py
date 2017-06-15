@@ -30,7 +30,7 @@ class Assets(object):
     """
     def __init__(self, nbBond=1, nbEquity=1, nbCash=1, \
                  ratio={'Bond':.7, 'Equity':.2, 'Cash':.1},\
-                 wealth = 1000, time_horizon=25):
+                 wealth = 1000, time_horizon=50):
         """
             creates an instance of the Assets class
             
