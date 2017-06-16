@@ -106,36 +106,44 @@ class Assets(object):
         """
             returns the value of the potential gains & losses over the duration of the simulation
         """
-        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Portfolio PGL'])
+        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Portfolio PGL', 'Portfolio PG', 'Portfolio PL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
                 value['Portfolio PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
+                value['Portfolio PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
                 value['Portfolio PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Portfolio PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
             elif(type(asset).__name__ == 'Equity'):
                 value['Portfolio PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
+                value['Portfolio PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
                 value['Portfolio PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Portfolio PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
         return value
     
     def computeBondPGL(self):
         """
             returns the value of the potential Bond gains & losses over the duration of the simulation
         """
-        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Bonds PGL'])
+        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Bonds PGL', 'Bonds PG', 'Bonds PL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
                 value['Bonds PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
+                value['Bonds PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
                 value['Bonds PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Bonds PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
         return value
     
     def computeEQPGL(self):
         """
             returns the value of the potential Equity gains & losses over the duration of the simulation
         """
-        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Equities PGL'])
+        value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Equities PGL', 'Equities PG', 'Equities PL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Equity'):
                 value['Equities PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
+                value['Equities PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
                 value['Equities PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Equities PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
         return value
     
     def _increase_(self, amount, current_step, asset_type='Equity'):
