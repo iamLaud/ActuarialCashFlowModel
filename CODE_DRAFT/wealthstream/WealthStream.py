@@ -35,9 +35,9 @@ class WealthStream():
         self.time_horizon = time_horizon
         self.pluses = []
         self.minuses = []
-        if(plus != None):
+        if(plus):
             self.pluses.append(plus)
-        if(minus != None):
+        if(minus):
             self.minuses.append(minus)
         self.value = pd.DataFrame(data=value, index=np.arange(1,self.time_horizon+1), columns=['Stream Value']) 
         self.computeWealth()
@@ -54,14 +54,15 @@ class WealthStream():
 
     def substract(self, minus):
         self.minuses.append(minus)    
-        self.value['Stream Value'] -= self.minuses[-1].iloc[:]
+        self.value.loc[:, 'Stream Value'] -= self.minuses[-1].iloc[:]
 
     def computeWealth(self):
+        self.value.loc[:, 'Stream Value'] = 0
         for e in self.minuses:
-            if(e != None):
+            if(not e.empty):
                 self.value.loc[:, 'Stream Value'] -= e.iloc[:]
         for e in self.pluses:
-            if(e != None):
+            if(not e.empty):
                 self.value.loc[:, 'Stream Value'] += e.iloc[:]
         
     def transferWealth(self, other_wealthstream, amount, current_step, direction=1): # transfère de la richesse d'un flux à l'autre (ex: PG -> available wealth)
@@ -84,41 +85,56 @@ class WealthStream():
     def __str__(self):
      return self.value.__str__()
  
+    def __add__(self, wstream2):
+        result = WealthStream(time_horizon=self.time_horizon)
+        for e in self.pluses:
+            result.pluses.append(e)
+        for e in wstream2.pluses:
+            result.pluses.append(e)
+        for e in self.minuses:
+            result.minuses.append(e)
+        for e in wstream2.minuses:
+            result.minuses.append(e)
+        result.computeWealth()
+        return result
+
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
 #
-#def main():
-#    import copy
-#    import gc 
-#    gc.enable() # Nettoyage dynamique de la RAM
-##    ---------------------------------------------
-#    
-#    stream1 = WealthStream()
-#    stream1.value.loc[:, 'Stream Value'] = 200
-#    stream2 = copy.deepcopy(stream1)
-#    stream2.value.loc[:, 'Stream Value'] = 400
+def main():
+    import copy
+    import gc 
+    gc.enable() # Nettoyage dynamique de la RAM
+#    ---------------------------------------------
     
-#    mean = 0
-#    std = 10
-#    noise1 = np.random.normal(mean, std, size=stream1.time_horizon)
-#    noise2 = np.random.poisson(size=stream1.time_horizon)
-#
-#    series1 = pd.Series(data=noise1, index=np.arange(1,stream1.time_horizon+1))
-#    series2 = pd.Series(data=noise2, index=np.arange(1,stream1.time_horizon+1))
-#    
-##    s = series1.plot(title='Evolution des Series - bruit blanc')
-##    series2.plot(ax=s)
-##    s.legend(['Serie 1', 'Serie 2'], loc='center left', bbox_to_anchor=(1.0, 0.5))
-#    
-#    stream1.add(series1)
-#    stream1._reduceWealth_(amount=1000, current_step=20)
-##    stream1.substract(series1)
-#    stream2.add(series2)
-#    df = stream1.value.plot()
-#    stream2.value.plot(ax=df)
-#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
-#    
-#
-#if __name__ == "__main__":
-#    main()
+    stream1 = WealthStream()
+    print(stream1.pluses)
+    stream1.value.loc[:, 'Stream Value'] = 0
+    stream2 = copy.deepcopy(stream1)
+    stream2.value.loc[:, 'Stream Value'] = 0
+    
+    mean = 0
+    std = 10
+    noise1 = np.random.normal(mean, std, size=stream1.time_horizon)
+    noise2 = np.random.poisson(size=stream1.time_horizon)
+
+    series1 = pd.Series(data=500, index=np.arange(1,stream1.time_horizon+1))
+    series2 = pd.Series(data=800, index=np.arange(1,stream1.time_horizon+1))
+    
+#    s = series1.plot(title='Evolution des Series - bruit blanc')
+#    series2.plot(ax=s)
+#    s.legend(['Serie 1', 'Serie 2'], loc='center left', bbox_to_anchor=(1.0, 0.5))
+    
+    stream1.substract(series1)
+    stream1.add(series2)
+    
+    stream2 = stream1 + stream1
+    
+    df = stream1.value.plot()
+    stream2.value.plot(ax=df)
+    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    
+
+if __name__ == "__main__":
+    main()

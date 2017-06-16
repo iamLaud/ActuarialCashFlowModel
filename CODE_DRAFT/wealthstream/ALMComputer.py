@@ -46,13 +46,29 @@ class ALMComputer(object):
         
 #        ---------- INITIALIZATION ------------------------       
         self.available_wealth = WealthStream()
-        
+        for e in self.assets.portfolio:
+            self.available_wealth.add(e.value.iloc[:, 0]*e.volume.iloc[:, 0])
+            # initialization by Market Cap (=unit value(column 0) x volume)
 #       ---------------------------------------------------
-        pgl = self.assets.computePortfolioPGL()       
+        pgl = self.assets.computePortfolioPGL()  
+        mean = 0
+        std = 50
+        noise1 = np.random.normal(mean, std, size=self.time_horizon)
+        noise2 = np.random.normal(mean, std, size=self.time_horizon)
+        pgl.iloc[:, 1] = abs(noise1)
+        pgl.iloc[:, 2] = abs(noise2)
+        a=pgl.iloc[:, 1].plot()
+        pgl.iloc[:, 2].plot(ax=a)
+#       ---
         self.potential_gain = WealthStream()
+        self.potential_gain.add(pgl.iloc[:, 1])
+#       ---
         self.potential_loss = WealthStream()
+        self.potential_gain.substract(pgl.iloc[:, 2])
+#       ---
         self.net_potential_gain = WealthStream()
-        
+        self.net_potential_gain.add(pgl.iloc[:, 1])
+        self.net_potential_gain.substract(pgl.iloc[:, 2])
 #       ---------------------------------------------------   
         self.max_wealth = WealthStream()
         self.min_wealth = WealthStream()
@@ -104,7 +120,7 @@ class ALMComputer(object):
             for t in range(1, simulator.time_horizon+1):
                 simulator.simulatePeriod()    
                 
-            #------------ Save option -----------------
+        #------------ Save option -----------------
 #            path = r'C:\Users\FR015797\Documents\PyALM_gen\data' # write here the absolute path to the data directory of the project
 #            filename = '\save_trajectory'+str(k)+'.csv'
 #            simulator.available_wealth.to_csv(path+filename, sep=';')
@@ -127,6 +143,9 @@ class ALMComputer(object):
         print('Valeur de la VIF: ', end='\n')
         print('Valeur du SCR: ',end='\n')
         print("--- Simulation ran in %s seconds ---" % (time.time() - start_time))
-
+#        df= simulator.available_wealth.value.plot()
+        df = simulator.potential_gain.value.plot()
+        simulator.potential_loss.value.plot(ax=df)
+#        simulator.net_potential_gain.value.plot(ax=df)
     if __name__ == "__main__":
         main()
