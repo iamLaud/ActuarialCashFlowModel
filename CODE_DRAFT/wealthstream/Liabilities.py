@@ -145,13 +145,13 @@ class Liabilities(object):
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
-
-def main():
-    passif = Liabilities()
-    for i in range(1, passif.time_horizon):
-        passif.update(i)
-        if(i == 5 or i==11 or i==21):
-            passif._lookout_(i).value.plot()
+#
+#def main():
+#    passif = Liabilities()
+#    for i in range(1, passif.time_horizon):
+#        passif.update(i)
+#        if(i == 5 or i==11 or i==21):
+#            passif._lookout_(i).value.plot()
 
 
         
@@ -176,5 +176,5 @@ def main():
 #    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()

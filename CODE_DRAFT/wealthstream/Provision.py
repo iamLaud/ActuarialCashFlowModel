@@ -33,7 +33,7 @@ class Provision(object):
     """
     
     def __init__(self, value=0, time_horizon=50, starting_point=1,\
-                 duration=50, limit_sup=.2, recovery_frequency=0,\
+                 duration=10, limit_sup=.2, recovery_frequency=0,\
                  recovery_percentage=0.334, recovery_mode='percentage'): 
         self.time_horizon = time_horizon
         self.starting_point = starting_point
@@ -143,7 +143,6 @@ class Provision(object):
         self.value.loc[current_step:self.time_horizon, 'Value'] += amount
         # we receive some or all the provision from a Wealthstream
                    
-#%%
     
 #--------------------------------------------------
 #       Start of the testing part of the code

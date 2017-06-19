@@ -28,7 +28,7 @@ class Assets(object):
         
         Assets is basically a List of Asset
     """
-    def __init__(self, nbBond=1, nbEquity=1, nbCash=1, \
+    def __init__(self, nb_bond=1, nb_equity=1, nb_cash=1, \
                  ratio={'Bond':.7, 'Equity':.2, 'Cash':.1},\
                  wealth = 1000, time_horizon=50):
         """
@@ -38,33 +38,33 @@ class Assets(object):
                 and an available wealth of 1000 euros split between these 3 classes of Asset over a 25-year horizon.
                 
             :param portfolio: the core of the class
-            :param nbBond: the number of Bond instrument composing the portfolio of Assets
-            :param nbEquity: the number of Equity instrument composing the portfolio of Assets
-            :param nbCash: the number of Cash instrument composing the portfolio of Assets
+            :param nb_bond: the number of Bond instrument composing the portfolio of Assets
+            :param nb_equity: the number of Equity instrument composing the portfolio of Assets
+            :param nb_cash: the number of Cash instrument composing the portfolio of Assets
             :param wealth: the amount of wealth to be invested in the portfolio
             :param time_horizon: the projected duration of the simulation
             :type portfolio: List of Asset
-            :type nbBond: Integer
-            :type nbEquity: Integer
-            :type nbCash: Integer
+            :type nb_bond: Integer
+            :type nb_equity: Integer
+            :type nb_cash: Integer
             :type wealth: Float
             :type time_horizon: Integer
         """
         self.portfolio = []
         self.ratio = ratio
-        self.nbBond = nbBond
-        self.nbEquity = nbEquity
-        self.nbCash = nbCash
+        self.nb_bond = nb_bond
+        self.nb_equity = nb_equity
+        self.nb_cash = nb_cash
         self.wealth = wealth
         self.time_horizon = time_horizon
         
         # we create the portfolio according to our specifications (ratio equity classes):
-        for _ in range(self.nbBond):
-            self.portfolio.append(Bond(value=1, volume=self.wealth*ratio['Bond']/self.nbBond, time_horizon=self.time_horizon))
-        for _ in range(self.nbEquity):
-            self.portfolio.append(Equity(value=1, volume=self.wealth*ratio['Equity']/self.nbEquity, time_horizon=self.time_horizon))
-        for _ in range(self.nbCash):
-            self.portfolio.append(Cash(value=1, volume=self.wealth*ratio['Cash']/self.nbCash, time_horizon=self.time_horizon))
+        for _ in range(self.nb_bond):
+            self.portfolio.append(Bond(value=1, volume=self.wealth*ratio['Bond']/self.nb_bond, time_horizon=self.time_horizon))
+        for _ in range(self.nb_equity):
+            self.portfolio.append(Equity(value=1, volume=self.wealth*ratio['Equity']/self.nb_equity, time_horizon=self.time_horizon))
+        for _ in range(self.nb_cash):
+            self.portfolio.append(Cash(value=1, volume=self.wealth*ratio['Cash']/self.nb_cash, time_horizon=self.time_horizon))
         
     
     def computePortfolioVal(self): 

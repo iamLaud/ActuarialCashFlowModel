@@ -58,7 +58,7 @@ class Equity(Asset):
         self.return_rate = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['RRate'])
         self.return_rate.loc[self.starting_point:self.time_horizon, 'RRate'] = return_rate
         # Initialisation de value
-        self.value = pd.DataFrame(data=value, index=np.arange(1,time_horizon+1), columns=['Book Value', 'Market Value'])
+        self.value = pd.DataFrame(data=value, index=np.arange(1,time_horizon+1), columns=['Market Value', 'Book Value'])
         self.value.loc[:starting_point-1, 'Book Value'] = 0
         self.value.loc[:starting_point-1, 'Market Value'] = 0
 #        self.value.loc[:, 'Market Value'] = 0

@@ -102,39 +102,30 @@ class WealthStream():
 #       Start of the testing part of the code
 #--------------------------------------------------
 #
-def main():
-    import copy
-    import gc 
-    gc.enable() # Nettoyage dynamique de la RAM
-#    ---------------------------------------------
-    
-    stream1 = WealthStream()
-    print(stream1.pluses)
-    stream1.value.loc[:, 'Stream Value'] = 0
-    stream2 = copy.deepcopy(stream1)
-    stream2.value.loc[:, 'Stream Value'] = 0
-    
-    mean = 0
-    std = 10
-    noise1 = np.random.normal(mean, std, size=stream1.time_horizon)
-    noise2 = np.random.poisson(size=stream1.time_horizon)
-
-    series1 = pd.Series(data=500, index=np.arange(1,stream1.time_horizon+1))
-    series2 = pd.Series(data=800, index=np.arange(1,stream1.time_horizon+1))
-    
-#    s = series1.plot(title='Evolution des Series - bruit blanc')
-#    series2.plot(ax=s)
-#    s.legend(['Serie 1', 'Serie 2'], loc='center left', bbox_to_anchor=(1.0, 0.5))
-    
-    stream1.substract(series1)
-    stream1.add(series2)
-    
-    stream2 = stream1 + stream1
-    
-    df = stream1.value.plot()
-    stream2.value.plot(ax=df)
-    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
-    
-
-if __name__ == "__main__":
-    main()
+#def main():
+#    import copy
+#    import gc 
+#    gc.enable() # Nettoyage dynamique de la RAM
+##    ---------------------------------------------
+#    
+#    stream1 = WealthStream()
+#    stream2 = copy.deepcopy(stream1)
+#    
+#
+#
+#    series1 = pd.Series(data=500, index=np.arange(1,stream1.time_horizon+1))
+#    series2 = pd.Series(data=800, index=np.arange(1,stream1.time_horizon+1))
+#    
+#    stream1.substract(series1)
+#    stream1.add(series2)
+#    
+#    stream2 = stream1 + stream1
+#    
+#    df = stream1.value.plot()
+#    stream2.value.plot(ax=df)
+#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+#    print(stream2.pluses)
+#    
+#
+#if __name__ == "__main__":
+#    main()
