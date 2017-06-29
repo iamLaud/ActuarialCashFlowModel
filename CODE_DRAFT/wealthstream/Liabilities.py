@@ -35,7 +35,7 @@ class Liabilities(object):
             self.math_provision.append(math_provision)
         else:
             self.math_provision.append(Liability(value=6, starting_point=1))          
-            self.math_provision.append(Liability(value=600, time2expiration=15))  
+            self.math_provision.append(Liability(value=600, lifespan=15))  
             self.math_provision.append(Liability(value=60, starting_point=20))          
 
 
@@ -87,7 +87,7 @@ class Liabilities(object):
             returns the Liability whose time2expiry at a given step of time is the shortest
         """
         selection = self.math_provision
-        selection.sort(key=lambda x:x.time2expiration, reverse=False)
+        selection.sort(key=lambda x:x.contract_age, reverse=False)
         i = 0
         while(selection[i].value.loc[current_step, 'Contract Value'] == 0 and i<len(selection)):
             i += 1 # on exclut les assets vendus dont l'ecart absolu serait le minimum
@@ -111,30 +111,30 @@ class Liabilities(object):
                                              starting_point=current_step,\
                                              time2expiration=20))    
     
-    def update(self, current_step, cash_flow_in=None, cash_flow_out=None, available_wealth=None, mode='mid'):
+    def update(self, current_step, cash_flow_in=None, cash_flow_out=None, available_wealth=None, mode='early'):
+        flag = None
         # on actualise ici les contrats d'assurance contenus dans math_provision
-        if(mode == 'mid'): # anciennete et age
+        if(mode == 'early'): # anciennete et age
+            flag = 0
             for e in self.math_provision:
-                tmp = e.update(current_step)
-#                if(tmp != 0):
-#                    cash_flow_out.value.loc[current_step, 'Stream Value'] = tmp
-                    #si !=0 on a des sorties de contrats donc on MaJ la WStream des CF_out
-#            for key, e in self.other_provisions.items():            
-#                tmp = e.update(current_step)
-#                if(tmp != 0):
-#                    cash_flow_in.value.loc[current_step, 'Stream Value'] = tmp
-                    #si !=0 on a des reprises sur dotation on MaJ le CF_in 
-                    
-        if(mode == 'early'): # rachats, deces, entrees, sorties, taux
-            pass # pour l'instant on fusionne l'etape 'early' et 'mid'
-        
+                flag  += e.update(current_step, mode='early')
+                
+        if(mode == 'mid'): # rachats, deces, entrees, sorties, taux
+            flag = [0, 0]
+            for e in self.math_provision:
+                tmp = e.update(current_step, mode='mid')
+                flag[0] += tmp[0]
+                flag[1] += tmp[1]
+                       
         if(mode == 'late'): #actualisation PM et repartition provisions APRES SERVICE DES TAUX
             tmp = available_wealth.loc[current_step, 'Stream Value']    
             if(tmp>0):
-                self.other_provisions['PPB'].value.loc[current_step, 'Value'] = tmp
-                available_wealth.value.loc[current_step, 'Stream Value'] -= tmp
-            # si available_wealth > 0 apres service des taux, il reste de l'argent a doter quelques part (marge ou provisions)    
-            
+                pass
+#                self.other_provisions['PPB'].value.loc[current_step, 'Value'] = tmp
+#                available_wealth.value.loc[current_step, 'Stream Value'] -= tmp
+                # si available_wealth > 0 apres service des taux, il reste de l'argent a doter quelques part (marge ou provisions)    
+        return flag
+    
     def _clear_(self):
         flag = 0
         for e in self.math_provision:
@@ -142,39 +142,25 @@ class Liabilities(object):
         for e in self.other_provisions:
             flag += e.recover(current_step=self.time_horizon, percentage=1, amount=0)
         return flag
+    
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
-#
-#def main():
-#    passif = Liabilities()
-#    for i in range(1, passif.time_horizon):
-#        passif.update(i)
-#        if(i == 5 or i==11 or i==21):
-#            passif._lookout_(i).value.plot()
 
-
+def main():
+    passif = Liabilities()
+    for i in range(1, passif.time_horizon):
+        passif.update(i)
+        if(i == 5 or i==11 or i==21):
+            passif._lookout_(i).value.plot()      
         
-        
-    #    ------------- PLOT RESULTS ---------------------------------
-#    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
-#    assets.computePortfolioVal().plot(ax=df)
-#    assets.computeBondVal().plot(ax=df)
-#    assets.computeEQVal().plot(ax=df)
-#    assets.computeCashVal().plot(ax=df)
-#    
-#    for k in range(1, assets.time_horizon):
-#        if(k%5 == 0):
-#            df.axvline(k, color='k', linewidth=.5, linestyle='--')
-#            df.axvline(k+1, color='r', linewidth=.5, linestyle='--')
-#        if(k%10 == 0):
-#            df.axvline(k, color='r', linewidth=.5, linestyle='--')
-#            
-##    df.axvline(11, color='k', linewidth=.5, linestyle='--')
-##    df.axvline(12, color='k', linewidth=.5, linestyle='--')
-##    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
+#        ------------- PLOT RESULTS ---------------------------------
+            
+#    df.axvline(11, color='k', linewidth=.5, linestyle='--')
+#    df.axvline(12, color='k', linewidth=.5, linestyle='--')
+#    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
 #    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+#    df.grid(True)
 
-
-#if __name__ == "__main__":
-#    main()
+if __name__ == "__main__":
+    main()

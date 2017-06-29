@@ -13,6 +13,7 @@ Date of last revision: May 23rd 2017
 from Bond import Bond
 from Equity import Equity
 from Cash import Cash
+from ESGLinker import ESGLinker
 #--------------------------------------------------
 #           Python packages
 #--------------------------------------------------
@@ -57,14 +58,15 @@ class Assets(object):
         self.nb_cash = nb_cash
         self.wealth = wealth
         self.time_horizon = time_horizon
+        self.generator = ESGLinker()
         
         # we create the portfolio according to our specifications (ratio equity classes):
         for _ in range(self.nb_bond):
-            self.portfolio.append(Bond(value=1, volume=self.wealth*ratio['Bond']/self.nb_bond, time_horizon=self.time_horizon))
+            self.portfolio.append(Bond(value=self.wealth*ratio['Bond']/self.nb_bond, time_horizon=self.time_horizon))
         for _ in range(self.nb_equity):
-            self.portfolio.append(Equity(value=1, volume=self.wealth*ratio['Equity']/self.nb_equity, time_horizon=self.time_horizon))
+            self.portfolio.append(Equity(value=self.wealth*ratio['Equity']/self.nb_equity, time_horizon=self.time_horizon))
         for _ in range(self.nb_cash):
-            self.portfolio.append(Cash(value=1, volume=self.wealth*ratio['Cash']/self.nb_cash, time_horizon=self.time_horizon))
+            self.portfolio.append(Cash(value=self.wealth*ratio['Cash']/self.nb_cash, time_horizon=self.time_horizon))
         
     
     def computePortfolioVal(self): 
@@ -74,32 +76,32 @@ class Assets(object):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Portfolio Value'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
-                value['Portfolio Value'] += asset.value['Market Value'] * asset.volume['Volume']
+                value['Portfolio Value'] += asset.value['Market Value']
             elif(type(asset).__name__ == 'Equity'):
-                value['Portfolio Value'] += asset.value['Market Value'] * asset.volume['Volume']
+                value['Portfolio Value'] += asset.value['Market Value']
             elif(type(asset).__name__ == 'Cash'):
-                value['Portfolio Value'] += asset.value['Market Value'] * asset.volume['Volume']
+                value['Portfolio Value'] += asset.value['Market Value']
         return value
     
     def computeEQVal(self):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['EQ Total Value'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Equity'):
-                value['EQ Total Value'] += asset.value['Market Value'] * asset.volume['Volume']
+                value['EQ Total Value'] += asset.value['Market Value']
         return value
     
     def computeBondVal(self):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Bond Total Value'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
-                value['Bond Total Value'] += asset.value['Market Value'] * asset.volume['Volume']
+                value['Bond Total Value'] += asset.value['Market Value']
         return value
     
     def computeCashVal(self):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Cash Total Value'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Cash'):
-                value['Cash Total Value'] += asset.value['Market Value'] * asset.volume['Volume']
+                value['Cash Total Value'] += asset.value['Market Value']
         return value
     
     def computePortfolioPGL(self): 
@@ -109,15 +111,15 @@ class Assets(object):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Portfolio PGL', 'Portfolio PG', 'Portfolio PL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
-                value['Portfolio PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Portfolio PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Portfolio PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
-                value['Portfolio PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Portfolio PGL'] += asset.potential['Potential Gain']
+                value['Portfolio PG'] += asset.potential['Potential Gain']
+                value['Portfolio PGL'] += asset.potential['Potential Loss']
+                value['Portfolio PL'] += asset.potential['Potential Loss']
             elif(type(asset).__name__ == 'Equity'):
-                value['Portfolio PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Portfolio PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Portfolio PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
-                value['Portfolio PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Portfolio PGL'] += asset.potential['Potential Gain'] 
+                value['Portfolio PG'] += asset.potential['Potential Gain'] 
+                value['Portfolio PGL'] += asset.potential['Potential Loss'] 
+                value['Portfolio PL'] += asset.potential['Potential Loss'] 
         return value
     
     def computeBondPGL(self):
@@ -127,10 +129,10 @@ class Assets(object):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Bonds PGL', 'Bonds PG', 'Bonds PL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Bond'):
-                value['Bonds PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Bonds PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Bonds PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
-                value['Bonds PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Bonds PGL'] += asset.potential['Potential Gain'] 
+                value['Bonds PG'] += asset.potential['Potential Gain'] 
+                value['Bonds PGL'] += asset.potential['Potential Loss'] 
+                value['Bonds PL'] += asset.potential['Potential Loss']
         return value
     
     def computeEQPGL(self):
@@ -140,23 +142,23 @@ class Assets(object):
         value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Equities PGL', 'Equities PG', 'Equities PL'])
         for asset in self.portfolio:
             if(type(asset).__name__ == 'Equity'):
-                value['Equities PGL'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Equities PG'] += asset.potential['Potential Gain'] * asset.volume['Volume']
-                value['Equities PGL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
-                value['Equities PL'] += asset.potential['Potential Loss'] * asset.volume['Volume']
+                value['Equities PGL'] += asset.potential['Potential Gain']
+                value['Equities PG'] += asset.potential['Potential Gain']
+                value['Equities PGL'] += asset.potential['Potential Loss']
+                value['Equities PL'] += asset.potential['Potential Loss']
         return value
     
     def _increase_(self, amount, current_step, asset_type='Equity'):
         if(asset_type == 'Equity'):
-            self.portfolio.append(Equity(value=1, volume=amount,\
+            self.portfolio.append(Equity(value=amount,\
                                          time_horizon=self.time_horizon,\
                                          starting_point=current_step+1))
         if(asset_type == 'Bond'):
-            self.portfolio.append(Bond(value=1, volume=amount,\
+            self.portfolio.append(Bond(value=amount,\
                                        time_horizon=self.time_horizon,\
                                        starting_point=current_step+1))
         if(asset_type == 'Cash'):
-            self.portfolio.append(Cash(value=1, volume=amount,\
+            self.portfolio.append(Cash(value=amount,\
                                        time_horizon=self.time_horizon,\
                                        starting_point=current_step+1))
         
@@ -164,7 +166,7 @@ class Assets(object):
         tmp = 0
         while(tmp < amount):
             e = self._lookout_(amount=(amount-tmp), current_step=current_step+1, asset_type=asset_type)
-            val = e.value.loc[current_step, 'Market Value'] * e.volume.loc[current_step, 'Volume']
+            val = e.value.loc[current_step, 'Market Value']
             if(val > (amount-tmp)):
                 tmp += e.sell(current_step=current_step, amount=(amount-tmp))
             else:
@@ -213,26 +215,29 @@ class Assets(object):
             for e in self.portfolio:
                 if(type(e).__name__ == asset_type):
                     selection.append(e)
-        selection.sort(key=lambda x:abs(x.value.loc[current_step, 'Market Value']*x.volume.loc[current_step, 'Volume']-amount), reverse=False)
+        selection.sort(key=lambda x:abs(x.value.loc[current_step, 'Market Value']-amount), reverse=False) # l'Asset dont la valeur est la plus proche du 
+        # montant souhaite est ordonne en premier dans la liste
         i = 0
-        while(selection[i].value.loc[current_step, 'Market Value']*selection[i].volume.loc[current_step, 'Volume'] == 0 and i<len(selection)):
+        while(selection[i].value.loc[current_step, 'Market Value'] == 0 and i<len(selection)):
             i += 1 # on exclut les assets vendus dont l'ecart absolu serait le minimum
         choice = selection[i]
         return choice 
   
-    def update(self, current_step):
+    def update(self, current_step, current_yield, spreads):
         """
             updates the value of the portfolio over a period of time
         """
         for e in self.portfolio:
-            e.update(current_step)
+            e.update(current_step, current_yield, spreads)
             if(e.flag != 0):
-                self.portfolio.append(Bond(value=1, volume=e.flag,\
+                self.portfolio.append(Bond(value=e.flag,\
                                  starting_point=current_step, time_horizon=self.time_horizon))
-                self.portfolio[-1].volume.loc[current_step, 'Volume'] = 0  # ----------- ATTENTION -------------
+                self.portfolio[-1].value.loc[current_step, 'Market Value'] = 0  # ----------- ATTENTION -------------
+                self.portfolio[-1].value.loc[current_step, 'Book Value'] = 0 
+                self.portfolio[-1].value.loc[current_step, 'Face Value'] = 0 
                 e.flag = 0 
             e.computePotential()
-                # on réinvestit automatiquement le nominal
+            # on réinvestit automatiquement le nominal
                 
     def clear(self):
         """
@@ -246,41 +251,30 @@ class Assets(object):
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
-#
+
 def main():
     assets = Assets(wealth=1000, time_horizon=50) 
-    for i in range(1, assets.time_horizon):
-        assets.update(i)
-#        if(i==15):
-#            assets._decrease_(amount=400, current_step=i, asset_type='Bond')
-#        if(i == 40):
-#            assets._rebalance_(current_step=i)
-#        if(i%10 == 0):
-#           assets._increase_(amount=100, current_step=i, asset_type='Cash')
-#           assets._increase_(amount=100, current_step=i, asset_type='Equity') 
-#        if(i%10 == 0):
-#    for asset in assets.portfolio:
-#        if(type(asset).__name__ == 'Equity'):
-#            asset.potential.plot()
+    print(assets.portfolio[0].value)
 
-#    ------------- PLOT RESULTS ---------------------------------
+##    ------------- PLOT RESULTS ---------------------------------
+#
 #    df = assets.computePortfolioVal().plot(title="Evolution de la composition du portefeuille au cours de la simulation")
 #    assets.computePortfolioVal().plot(ax=df)
 #    assets.computeBondVal().plot(ax=df)
 #    assets.computeEQVal().plot(ax=df)
 #    assets.computeCashVal().plot(ax=df)
-#    
-#    for k in range(1, assets.time_horizon):
-#        if(k%5 == 0):
-#            df.axvline(k, color='k', linewidth=.5, linestyle='--')
-#            df.axvline(k+1, color='r', linewidth=.5, linestyle='--')
-#        if(k%10 == 0):
-#            df.axvline(k, color='r', linewidth=.5, linestyle='--')
+#    df.grid(True)
+##    for k in range(1, assets.time_horizon):
+##        if(k%5 == 0):
+##            df.axvline(k, color='k', linewidth=.5, linestyle='--')
+##            df.axvline(k+1, color='r', linewidth=.5, linestyle='--')
+##        if(k%10 == 0):
+##            df.axvline(k, color='r', linewidth=.5, linestyle='--')
 #            
-#    df.axvline(11, color='k', linewidth=.5, linestyle='--')
-#    df.axvline(12, color='k', linewidth=.5, linestyle='--')
-#    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
+##    df.axvline(11, color='k', linewidth=.5, linestyle='--')
+##    df.axvline(12, color='k', linewidth=.5, linestyle='--')
+##    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
 #    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
-
+#
 if __name__ == "__main__":
     main()

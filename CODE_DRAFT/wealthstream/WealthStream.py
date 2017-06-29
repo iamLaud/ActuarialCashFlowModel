@@ -8,7 +8,7 @@ Created on Tue Apr 25 11:10:06 2017
 #--------------------------------------------------
 #           Project packages
 #--------------------------------------------------
-#from Assets import Assets
+from Assets import Assets
 #from Liabilities import Liabilities
 #--------------------------------------------------
 #           Python packages
@@ -27,7 +27,7 @@ class WealthStream():
         time_horizon: The time horizon over which the simulation takes place (integer).
     """
     
-    def __init__(self, plus=None, minus=None, value=0, time_horizon=50): 
+    def __init__(self, plus=None, minus=None, time_horizon=50): 
         self.time_horizon = time_horizon
         """
             minus and plus must be 1-dimensional positive-only DataFrame (aka Series) in order to work properly
@@ -39,16 +39,10 @@ class WealthStream():
             self.pluses.append(plus)
         if(minus):
             self.minuses.append(minus)
-        self.value = pd.DataFrame(data=value, index=np.arange(1,self.time_horizon+1), columns=['Stream Value']) 
+        self.value = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Stream Value']) 
         self.computeWealth()
         
-    def _addWealth_(self, amount, current_step): 
-        self.value.loc[current_step, 'Stream Value'] += amount
-        
-    def _reduceWealth_(self, amount, current_step):
-        self.value.loc[current_step, 'Stream Value'] -= amount
-        
-    def add(self, plus): 
+    def add(self, plus): # define the name of the Series to quickly retrieve the right one
         self.pluses.append(plus)    
         self.value.loc[:, 'Stream Value'] += self.pluses[-1].iloc[:]
 
@@ -65,23 +59,31 @@ class WealthStream():
             if(not e.empty):
                 self.value.loc[:, 'Stream Value'] += e.iloc[:]
         
-    def transferWealth(self, other_wealthstream, amount, current_step, direction=1): # transfère de la richesse d'un flux à l'autre (ex: PG -> available wealth)
+    # OBSOLETE -----------------------------------
+    def _addWealth_(self, amount, current_step): 
+        self.value.loc[current_step, 'Stream Value'] += amount
+        
+    def _reduceWealth_(self, amount, current_step):
+        self.value.loc[current_step, 'Stream Value'] -= amount
+        
+    def _transferWealth_(self, other_wealthstream, amount, current_step, direction=1): # transfère de la richesse d'un flux à l'autre (ex: PG -> available wealth)
         """
             principe des vases communiquant
         """
         if(direction == 1):
             assert(other_wealthstream.value.loc[current_step, 'Stream Value'] >= amount)
-            self.value.loc[current_step, 'Stream Value'] += amount
-            other_wealthstream.value.loc[current_step, 'Stream Value'] -= amount
+            self._addWealth_(amount, current_step)
+            other_wealthstream._reduceWealth_(amount, current_step)
         elif(direction == -1):
             assert(self.value.loc[current_step, 'Stream Value'] >= amount)
-            self.value.loc[current_step, 'Stream Value'] -= amount
-            other_wealthstream.value.loc[current_step, 'Stream Value'] += amount
+            self._reduceWealth_(amount, current_step)
+            other_wealthstream._addWealth_(amount, current_step)
         # on augmente le wealth si direction=1, diminue si =-1
         # on prend le wealthstream du flux1, on l'ajoute au flux 2
         # on diminue en consequence le flux1 (utilisation de la fonction sell, cashout et instanciation d'un nouvel instrument Actif ou versement provision)
         # e.sort(key=lambda x: (x.value-amount), reverse=True) = celui dont la value est la plus proche du montant visé
-        
+    # ---------------------------------------------
+    
     def __str__(self):
      return self.value.__str__()
  
@@ -110,21 +112,20 @@ class WealthStream():
 #    
 #    stream1 = WealthStream()
 #    stream2 = copy.deepcopy(stream1)
-#    
+#    a = Assets()
 #
 #
-#    series1 = pd.Series(data=500, index=np.arange(1,stream1.time_horizon+1))
-#    series2 = pd.Series(data=800, index=np.arange(1,stream1.time_horizon+1))
-#    
-#    stream1.substract(series1)
+#    series1 = pd.Series(data=400, index=np.arange(1,stream1.time_horizon+1))
+#    series2 = pd.Series(data=200, index=np.arange(1,stream1.time_horizon+1))
+#   
+#    stream1.add(series1)
 #    stream1.add(series2)
-#    
 #    stream2 = stream1 + stream1
 #    
+#    print(stream1.pluses)
 #    df = stream1.value.plot()
 #    stream2.value.plot(ax=df)
-#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
-#    print(stream2.pluses)
+#    df.legend(['Stream 1', 'Stream 2'], loc='center left', bbox_to_anchor=(1.0, 0.5))
 #    
 #
 #if __name__ == "__main__":

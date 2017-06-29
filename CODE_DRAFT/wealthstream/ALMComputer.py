@@ -48,8 +48,8 @@ class ALMComputer(object):
 #        ---------- INITIALIZATION ------------------------       
         self.available_wealth = WealthStream()
         for e in self.assets.portfolio:
-            self.available_wealth.add(e.value.iloc[:, 0]*e.volume.iloc[:, 0])
-            # initialization by Market Cap (=unit value(column 0) x volume)
+            self.available_wealth.add(e.value.iloc[:, 0])
+            # initialization by Market Cap
 #       ---------------------------------------------------
         pgl = self.assets.computePortfolioPGL()  
 #       ---
@@ -68,7 +68,7 @@ class ALMComputer(object):
 #       ---------------------------------------------------   
         self.total_asset_wealth = self.available_wealth + self.net_potential_gain
         self.financial_income = WealthStream()
-#        self.technical_income = WealthStream() # set to 0 for Life
+#        self.technical_income = WealthStream() # set to 0 for Life Insurance
 #        self.admin_income = WealthStream() # not modeled yet
         
         self.margin = WealthStream()
@@ -82,38 +82,44 @@ class ALMComputer(object):
         self.scr = 0.
         self.mcr = 0.
     
-    def simulatePeriod(self):
-        self.updateStart()
-        self.updateMid()
-        self.updateEnd()
+    def simulatePeriod(self, current_step):
+        self.updateStart(current_step)
+        self.updateMid(current_step)
+        self.updateEnd(current_step)
     
-    def updateStart(self):
-        pass # on met à jour les actifs
-    
-    def updateMid(self):
-        pass # on met à jour les jours les passifs
+    def updateStart(self, current_step):
+        self.assets.update(current_step) # on met à jour le bilan Actifs-Passif
+        flag = self.liabilities.update(current_step=current_step, cash_flow_in=None,\
+                                cash_flow_out=None, available_wealth=None, mode='early')
+        # actualisation de la PM et du portfeuille d'actifs ici (revente en face des sorties de contrats etc)
+        
+    def updateMid(self, current_step):
+        flag = self.liabilities.update(current_step=current_step, cash_flow_in=None,\
+                                cash_flow_out=None, available_wealth=None, mode='mid')
+        # on met à jour les jours les passifs
         # on cherche a servir les taux en appelant les differents leviers -- appeler la fonction computeRate de la classe Rate ici
         # toutes les classes de Rate seront appelees ici et interagiront avec les WealthStreams
     
-    def updateEnd(self):
+    def updateEnd(self, current_step):
         pass # on alloue les provisions et les benefices + marges
         # reallocation et rebalancement
 
 
 # --------------  MAIN OF THE PROGRAM -----------------------
     def main():
-        gc.enable() # Nettoyage dynamique de la RAM
+#       ------------------- DYNAMIC RAM CLEANING ---------------------
+        gc.enable() 
         # --------- TIME STAMPING ------------------------------------
         start_time = time.time()
         # ---------------------------------------------------------
 
         simulator = ALMComputer(time_horizon=50, nb_simulation=1000)
-        hmi = ALM_HMI(simulator)
+        hmi = ALM_HMI(simulator) # we pair the simulator and the HMI
         for k in range(1, simulator.nb_simulation+1):
             # reinitialiser les variables a chaque nouvelle simulation
             for t in range(1, simulator.time_horizon+1):
-                simulator.simulatePeriod()    
-#           ----------- WE SAVE AT THE END OF EACH TRAJECTORY PROJECTION     
+                simulator.simulatePeriod(t)
+#           ----------- WE SAVE THE VARIABLES WE WANT AT THE END OF EACH TRAJECTORY PROJECTION     
             if(k == 1):
                 hmi.save(ALM=simulator, exists=False, var_name='available_wealth')
                 hmi.save(ALM=simulator, exists=False, var_name='potential_gain')
@@ -148,6 +154,7 @@ class ALMComputer(object):
 #       -------------- INFO SCREEN DISPLAY -----------------
         duration = time.time() - start_time
         hmi.display(nb_simulation=simulator.nb_simulation, time_horizon=simulator.time_horizon, duration=duration)
+        # we display some information from the simulation onto the screen 
         
     if __name__ == "__main__":
         main()
