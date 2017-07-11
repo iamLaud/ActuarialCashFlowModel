@@ -52,6 +52,8 @@ class Equity(Asset):
         # Initialisation du return_rate
         self.return_rate = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['RRate'])
         self.return_rate.loc[self.starting_point:self.time_horizon, 'RRate'] = return_rate
+        # ligne suivante temporaire pour phase de coding/testing:
+        self.return_rate.loc[self.starting_point:self.time_horizon, 'RRate'] = np.random.normal(.02, .01, size=self.time_horizon-self.starting_point+1 )
         # Initialisation de value
         self.value = pd.DataFrame(data=value, index=np.arange(1,time_horizon+1), columns=['Market Value', 'Book Value'])
         self.value.loc[:starting_point-1, 'Book Value'] = 0
@@ -66,8 +68,8 @@ class Equity(Asset):
         """
         output = {}
         output['all'] = self.value.loc[current_step, 'Market Value']
+        output['pnl'] = self.value.loc[current_step, 'Market Value'] - self.value.loc[current_step, 'Book Value']
         if(current_step<self.time_horizon):
-            output['pnl'] = output['all'] - self.value.loc[current_step, 'Book Value']
             self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Market Value'] = 0
             self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Book Value'] = 0
         self.computePotential()
@@ -75,12 +77,15 @@ class Equity(Asset):
    
     def sell(self, amount, current_step):
         res = 0
-        if(amount <= self.value.loc[current_step, 'Market Value']):
-            self.value.loc[current_step+1:self.time_horizon, 'Market Value'] -= amount 
-            self.value.loc[current_step+1:self.time_horizon, 'Book Value'] -= amount
-            if(self.value.loc[current_step+1, 'Book Value'] < 0):
-                res = -self.value.loc[current_step+1:self.time_horizon, 'Book Value'] # s'il renvoit une valeur>0 = Plus Value, <0 = Moins Value
-                self.value.loc[current_step+1:self.time_horizon, 'Book Value'] = 0
+        ratio = amount / self.value.loc[current_step, 'Market Value']
+        if(ratio <= 1):
+            self.value.loc[current_step:self.time_horizon, 'Market Value'] -= ratio \
+                * self.value.loc[current_step:self.time_horizon, 'Market Value'] 
+            self.value.loc[current_step:self.time_horizon, 'Book Value'] -= ratio \
+                * self.value.loc[current_step:self.time_horizon, 'Book Value']
+            if(self.value.loc[current_step, 'Book Value'] < 0):
+                res = -self.value.loc[current_step, 'Book Value'] # s'il renvoit une valeur>0 = Plus Value, <0 = Moins Value
+                self.value.loc[current_step:self.time_horizon, 'Book Value'] = 0
         self.computePotential()
         return res
         
@@ -106,8 +111,10 @@ class Equity(Asset):
         """
             updates the potential gains & losses on this Equity
         """
-        self.potential["Potential Gain"] = np.where(self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value'] >0, (self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value']), 0)
-        self.potential["Potential Loss"] = np.where(self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value'] <0, (self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value']), 0)
+        self.potential["Potential Gain"] = np.where(self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value'] >0, \
+                      (self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value']), 0)
+        self.potential["Potential Loss"] = np.where(self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value'] <0, \
+                      (self.value.loc[:, 'Market Value'] - self.value.loc[:, 'Book Value']), 0)
 
     def updateValue(self, current_step):
         """
@@ -116,14 +123,15 @@ class Equity(Asset):
         # no dividend hypothesis
         # non amortizable Asset type i.e. Book Value doesn't decrease over time
         # Market Value updating only
-        self.value.loc[current_step:self.time_horizon, 'Market Value'] = self.value.loc[current_step, 'Market Value'] \
-                    * (1 + self.return_rate.loc[current_step, 'RRate'])
+        res = self.value.loc[current_step, 'Market Value'] * self.return_rate.loc[current_step, 'RRate']
+        self.value.loc[current_step+1:self.time_horizon, 'Market Value'] = self.value.loc[current_step, 'Market Value'] + res
+        return res
         
-    def update(self, current_step):
+    def update(self, current_step, current_yield=None, spreads=None):
         """
             updates the Equity over a period of time
         """
-        self.updateValue(current_step)
+        return self.updateValue(current_step)
 
     def __str__(self):
         return (self.value['Market Value']).__str__()
@@ -133,22 +141,24 @@ class Equity(Asset):
 #--------------------------------------------------
 
 #def main():
-#    equity = Equity(value=100, return_rate=.01, time_horizon=50)
-#    for i in range(1, equity.time_horizon):
-#        equity.update(i)
-#        if(i==10):
-#            a = equity.sell(50, i)
-#        if(i==20):
-#            b = equity.cashOut(i)
-#    equity.computePotential()   
+#    import gc
+#    gc.enable()
 #    
+#    equity = Equity(value=100)
+#    for t in range(1, equity.time_horizon+1):
+#        print("t = ",t, "I = ", equity.update(t), "all = ", equity.value.loc[t, 'Market Value''])
+##    res =  equity.cashOut(current_step=19)
+##    equity2 = Equity(value=res['all'], starting_point=20)
+###        if(t>1 and t<50):
+###            equity.sell(amount=.001*equity.value.loc[t-1, 'Market Value'], current_step=t)
+##    print("End of trajectory value = ", equity.cashOut(equity.time_horizon))
 #
-#    print(equity.value)
-#    print(equity.potential)
-#    print(a)
-#    print(b)
-#    df = equity.value.plot(title="PMVL de l'equity au cours de la simulation")
-#
+#    df = equity.value.plot(title='Evolution de la valeur d\'un Asset au cours de la simulation')
+##    equity2.value.plot(ax=df)
+##    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+##    
+##    df.grid(True)
+#    
 #if __name__ == "__main__":
 #    main()
-#    
+    

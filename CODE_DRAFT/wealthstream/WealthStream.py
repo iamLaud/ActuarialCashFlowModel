@@ -9,7 +9,7 @@ Created on Tue Apr 25 11:10:06 2017
 #           Project packages
 #--------------------------------------------------
 from Assets import Assets
-#from Liabilities import Liabilities
+from Liabilities import Liabilities
 #--------------------------------------------------
 #           Python packages
 #--------------------------------------------------
@@ -58,7 +58,25 @@ class WealthStream():
         for e in self.pluses:
             if(not e.empty):
                 self.value.loc[:, 'Stream Value'] += e.iloc[:]
-        
+    
+    def _lookout_(self, amount, current_step, mode='pluses'):
+        """
+            returns the element whose value at a given step of time is the closest to the desired amount 
+        """
+        choice = 0
+        if(mode == 'pluses'):
+            selection = self.pluses
+        else:
+            selection = self.minuses
+        # Critere discriminant la methode de tri de la selection:
+        selection.sort(key=lambda x:abs(x.value.iloc[current_step, 0]-amount), reverse=False) # l'Asset dont la valeur est la plus proche du 
+        # montant souhaite est ordonne en premier dans la liste
+        i = 0
+        while(selection[i].value.iloc[current_step, 0] == 0 and i<len(selection)):
+            i += 1 # on exclut les assets vendus dont l'ecart absolu serait le minimum
+        choice = selection[i]
+        return choice 
+    
     # OBSOLETE -----------------------------------
     def _addWealth_(self, amount, current_step): 
         self.value.loc[current_step, 'Stream Value'] += amount
@@ -103,7 +121,7 @@ class WealthStream():
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
-#
+
 #def main():
 #    import copy
 #    import gc 
@@ -122,11 +140,11 @@ class WealthStream():
 #    stream1.add(series2)
 #    stream2 = stream1 + stream1
 #    
-#    print(stream1.pluses)
 #    df = stream1.value.plot()
-#    stream2.value.plot(ax=df)
-#    df.legend(['Stream 1', 'Stream 2'], loc='center left', bbox_to_anchor=(1.0, 0.5))
 #    
-#
+#    series1.iloc[:] = 300
+#    stream1.computeWealth()
+#    stream1.value.plot(ax = df)
+#    df.legend(["Avant changement", "Apres changement"])
 #if __name__ == "__main__":
 #    main()

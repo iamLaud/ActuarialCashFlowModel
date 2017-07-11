@@ -17,7 +17,6 @@ from Liability import Liability
 #--------------------------------------------------
 import numpy as np
 import pandas as pd
-
 #--------------------------------------------------
 #       Start of the proper code
 #--------------------------------------------------
@@ -34,35 +33,34 @@ class Liabilities(object):
         if(math_provision != None):
             self.math_provision.append(math_provision)
         else:
-            self.math_provision.append(Liability(value=6, starting_point=1))          
-            self.math_provision.append(Liability(value=600, lifespan=15))  
-            self.math_provision.append(Liability(value=60, starting_point=20))          
-
+            self.math_provision.append(Liability(value=500, starting_point=1, age=50))          
+            self.math_provision.append(Liability(value=200, starting_point=5, age=50))  
+            self.math_provision.append(Liability(value=300, starting_point=3, age=50))          
 
             # parametrer la provision
 # ---------------------------------------------------------                   
         if(cap_reserve != None):
             self.other_provisions['Reserve de cap'] = cap_reserve
         else:
-            self.other_provisions['Reserve de cap'] = Provision(value=25)
+            self.other_provisions['Reserve de cap'] = Provision(value=100)
             # parametrer la provision
 # ---------------------------------------------------------                        
         if(own_funds != None):
             self.other_provisions['Fonds propres'] = own_funds
         else:
-            self.other_provisions['Fonds propres'] = Provision(value=42)
+            self.other_provisions['Fonds propres'] = Provision(value=100)
             # parametrer la provision
 # ---------------------------------------------------------                        
         if(profit_shar_prov != None):
             self.other_provisions['PPB'] = profit_shar_prov
         else:
-            self.other_provisions['PPB'] = Provision(value=933)
+            self.other_provisions['PPB'] = Provision(value=100)
             # parametrer la provision
 # ---------------------------------------------------------                       
         if(eligib_prov != None):
             self.other_provisions['PRE'] = eligib_prov
         else:
-            self.other_provisions['PRE'] = Provision(value=1)
+            self.other_provisions['PRE'] = Provision(value=100)
             # parametrer la provision
 # ---------------------------------------------------------                       
 
@@ -100,7 +98,7 @@ class Liabilities(object):
             e = self._lookout_(current_step)
             if(e.value.loc[current_step, 'Contract Value'] >= amount):
                 tmp += e.buyBack(current_step=current_step,\
-                                   amount=amount, percentage=0)
+                                   amount=amount-tmp, percentage=0)
             else:
                 tmp += e.buyBack(current_step=current_step,\
                                    percentage=1)
@@ -109,38 +107,45 @@ class Liabilities(object):
     def _increase_(self, amount, current_step): # to increase the amount of Liabilities
         self.math_provision.append(Liability(value=amount, time_horizon=50,\
                                              starting_point=current_step,\
-                                             time2expiration=20))    
-    
-    def update(self, current_step, cash_flow_in=None, cash_flow_out=None, available_wealth=None, mode='early'):
+                                             lifespan=20, age=50))    
+        
+    def update(self, current_step, cash_flows=None, available_wealth=None, mode='mid'):
         flag = None
+#        --------------- DEFAULT CASE -----------------------
+        if(cash_flows == None):
+            cash_flows = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['CF_in', 'CF_out'])
+        if(available_wealth == None): 
+            available_wealth = pd.DataFrame(data=0, index=np.arange(1,self.time_horizon+1), columns=['Stream Value'])
+#        -----------------------------------------------------
+                        
         # on actualise ici les contrats d'assurance contenus dans math_provision
-        if(mode == 'early'): # anciennete et age
+        if(mode == 'end'): # anciennete et age
             flag = 0
             for e in self.math_provision:
-                flag  += e.update(current_step, mode='early')
+                flag  += e.update(current_step, mode='end')
+                cash_flows.loc[current_step, 'CF_in'] += flag
+            if(flag != 0):
+                self._increase_(amount=flag, current_step=current_step+1)
                 
-        if(mode == 'mid'): # rachats, deces, entrees, sorties, taux
-            flag = [0, 0]
+        elif(mode == 'mid'): # rachats, deces, entrees, sorties, taux
             for e in self.math_provision:
-                tmp = e.update(current_step, mode='mid')
-                flag[0] += tmp[0]
-                flag[1] += tmp[1]
+                flag = e.update(current_step, mode='mid')
+                if(type(flag).__name__ == tuple):
+                    cash_flows.loc[current_step, 'CF_in'] += flag[0]
+                    cash_flows.loc[current_step, 'CF_out'] += flag[1]
                        
-        if(mode == 'late'): #actualisation PM et repartition provisions APRES SERVICE DES TAUX
-            tmp = available_wealth.loc[current_step, 'Stream Value']    
-            if(tmp>0):
-                pass
-#                self.other_provisions['PPB'].value.loc[current_step, 'Value'] = tmp
-#                available_wealth.value.loc[current_step, 'Stream Value'] -= tmp
-                # si available_wealth > 0 apres service des taux, il reste de l'argent a doter quelques part (marge ou provisions)    
+        elif(mode == 'early'): 
+            for e in self.other_provisions:
+                flag = e.update(current_step=current_step)
+                cash_flows.loc[current_step, 'CF_in'] += flag
         return flag
     
     def _clear_(self):
         flag = 0
         for e in self.math_provision:
             flag += e.buyBack(current_step=self.time_horizon)
-        for e in self.other_provisions:
-            flag += e.recover(current_step=self.time_horizon, percentage=1, amount=0)
+        for key, value in self.other_provisions.items():
+            flag += self.other_provisions[key].recover(current_step=self.time_horizon, percentage=1, amount=0)
         return flag
     
 #--------------------------------------------------
@@ -149,18 +154,15 @@ class Liabilities(object):
 
 def main():
     passif = Liabilities()
-    for i in range(1, passif.time_horizon):
-        passif.update(i)
-        if(i == 5 or i==11 or i==21):
-            passif._lookout_(i).value.plot()      
-        
-#        ------------- PLOT RESULTS ---------------------------------
-            
-#    df.axvline(11, color='k', linewidth=.5, linestyle='--')
-#    df.axvline(12, color='k', linewidth=.5, linestyle='--')
-#    df.axhline(y=1500,c="blue", linewidth=.5, zorder=0)
-#    df.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
-#    df.grid(True)
+ 
+    for t in range(1, passif.time_horizon+1):
+        passif.update(current_step=t, mode='mid')
+        passif.update(current_step=t, mode='end')
+    df = passif.math_provision[0].value.plot(title='Simulation d\'un portefeuille auto-géré de contrats d\'assurance')    
+    for e in passif.math_provision:
+        e.value.plot(ax =df)
+    df.axvline(30, color='black', linewidth=.5, linestyle='--')
+    df.axvline(31, color='black', linewidth=.5, linestyle='--')
 
 if __name__ == "__main__":
     main()

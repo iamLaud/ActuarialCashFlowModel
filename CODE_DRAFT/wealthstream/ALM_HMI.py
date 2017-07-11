@@ -27,6 +27,9 @@ class ALM_HMI(object):
     def save(self, ALM, exists, var_name):
         self.output.exportCSV(ALM=ALM, exists=exists, var_name=var_name)
     
+    def saveDF(self, ALM, exists, var_name):
+        self.output.dataFrame2CSV(ALM=ALM, exists=exists, var_name=var_name)
+        
     def load(self):
         pass
     

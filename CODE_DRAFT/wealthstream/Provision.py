@@ -147,36 +147,37 @@ class Provision(object):
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
+#
+    def main():
+        prov1 = Provision(value=0, time_horizon=50, limit_sup=.2)
+        
+#        prov1.computeProvision(wealth=1000, current_step=1, type='Fonds propres')
+        prov2 = Provision(value=800)
+        prov2.allocate(amount=300, current_step=10)
+        prov2.recover(current_step=20, amount=500)
+        prov2.value.plot()
 
-#    def main():
-#        prov1 = Provision(value=0, time_horizon=50, limit_sup=.2)
-#        
-##        prov1.computeProvision(wealth=1000, current_step=1, type='Fonds propres')
-#        prov2 = Provision(value=0)
-##        prov2.value.loc[1, 'Value'] = 1000
-#
-#
-##        # ------------------- TEST A ENLEVER ------------------
-#        mean = 0
-#        std = 100
-#        # ----------------------------------------------------
-#        
-#        for i in range(1,prov1.time_horizon+1):
-#            noise = abs(np.random.normal(mean, std, size=1))
-#            prov1.computeProvision(current_step=i, wealth=noise, type='Fonds propres')
-#            prov1.update(current_step=i, reference=800)
-#            prov2.value.loc[i, 'Value'] = noise
-#            
-#        df = prov1.value.plot(title='Analyse de la corrélation entre performance sur les Bonds et CapRes')
-#        prov2.value.plot(ax=df)
-#        df.axhline(y=0, c="red", linewidth=1, zorder=0)
-#        df.axvline(10, color='k', linewidth=.5, linestyle='--')
-#        df.axvline(20, color='k', linewidth=.5, linestyle='--')
-#        df.axvline(30, color='k', linewidth=.5, linestyle='--')
-#        df.axvline(40, color='k', linewidth=.5, linestyle='--')
-#        df.legend(["FP", "Flux entrant"], loc='center left', bbox_to_anchor=(1.0, 0.5))
-#
-#        
-#        
-#    if __name__ == "__main__":
-#        main()    
+#        # ------------------- TEST A ENLEVER ------------------
+        mean = 0
+        std = 100
+        # ----------------------------------------------------
+        
+        for i in range(1,prov1.time_horizon+1):
+            noise = abs(np.random.normal(mean, std, size=1))
+            prov1.computeProvision(current_step=i, wealth=noise, type='Fonds propres')
+            prov1.update(current_step=i, reference=800)
+            prov2.value.loc[i, 'Value'] = noise
+            
+        df = prov1.value.plot(title='Analyse de la corrélation entre performance sur les Bonds et CapRes')
+        prov2.value.plot(ax=df)
+        df.axhline(y=0, c="red", linewidth=1, zorder=0)
+        df.axvline(10, color='k', linewidth=.5, linestyle='--')
+        df.axvline(20, color='k', linewidth=.5, linestyle='--')
+        df.axvline(30, color='k', linewidth=.5, linestyle='--')
+        df.axvline(40, color='k', linewidth=.5, linestyle='--')
+        df.legend(["FP", "Flux entrant"], loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+        
+        
+    if __name__ == "__main__":
+        main()    

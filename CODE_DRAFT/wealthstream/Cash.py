@@ -48,7 +48,7 @@ class Cash(Asset):
         output = {}
         if(current_step < self.time_horizon):
             output['all'] = self.value.loc[current_step, 'Market Value']
-            self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Market Value'] = 0
+            self.value.loc[current_step+1:self.time_horizon, 'Market Value'] = 0
             output['pnl'] = 0
         return output    
     
@@ -58,29 +58,38 @@ class Cash(Asset):
         """
         return self.value.loc[current_step, 'Market Value']
 
-    def updateValue(self, current_step):
+    def updateValue(self, current_step): # actualisation debut de periode
         """
             capitalizes the Equity over a period of time
         """
-        self.value.loc[current_step:self.time_horizon, 'Market Value'] = self.value.loc[current_step, 'Market Value'] * (1 + self.return_rate.loc[current_step, 'RRate'])
-        
-    def update(self, current_step):
+        res = self.value.loc[current_step, 'Market Value'] * self.return_rate.loc[current_step, 'RRate']
+        self.value.loc[current_step+1:self.time_horizon, 'Market Value'] = self.value.loc[current_step, 'Market Value'] + res
+        return res
+    
+    def update(self, current_step, current_yield=None, spreads=None):
         """
             updates the Equity over a period of time
         """
-        self.updateValue(current_step)
+        return self.updateValue(current_step)
     
 #--------------------------------------------------
 #       Start of the testing part of the code
 #--------------------------------------------------
 
 #def main():
-#    cash = Cash(value=100, return_rate=0.01, time_horizon=20)
+#    import gc
+#    gc.enable()
+#    
+#    cash = Cash(value=100)
 #    for i in range(1,cash.time_horizon+1):
 #        cash.update(i)
-#    print(cash.value['Market Value'])
-#    cash.cashOut(15)
-#    cash.value['Market Value'].plot()
+#        if(i%10==0):
+#            cash.sell(amount=.1*cash.value.loc[i, 'Market Value'], current_step=i)
+#
+#    df = cash.value.plot(title='Evolution de la valeur du Cash au cours de simulation')
+##    df.axvline(21, color='k', linewidth=1, linestyle='--')
+#
+#    df.grid(True)
 #    
 #if __name__ == "__main__":
 #    main()

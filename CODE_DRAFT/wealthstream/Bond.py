@@ -49,8 +49,8 @@ class Bond(Asset):
         :return: An instance of the Equity class
         :rtype: Equity object
     """
-    def __init__(self, face_value=1, value=1, time_horizon=20,\
-                 starting_point=1, coupon=0, MAX_MATURITY=10, \
+    def __init__(self, face_value=1, value=1, time_horizon=50,\
+                 starting_point=1, coupon=0, MAX_MATURITY=30, \
                  rating="AAA", default_proba=0, \
                  currency="Euro", book_yield=0): 
         self.starting_point = starting_point
@@ -61,13 +61,14 @@ class Bond(Asset):
         self.maturity = self.MAX_MATURITY # decrease each year until expiring at 0 thus delivering back the face value
         
         # Initialisation du book_yield
-        self.book_yield = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['RRate'])
-        self.book_yield.loc[starting_point:self.time_horizon, 'RRate'] = book_yield
+        USrate = (np.asarray([1.22,	1.35,	1.51,	1.65,	1.78,	1.89,	1.98,	2.06,	2.13,	2.19,	2.24,	2.29,	2.33,	2.37,	2.41,	2.45,	2.49,	2.53,	2.56,	2.60,	2.63,	2.67,	2.70,	2.73,	2.77,	2.80,	2.83,	2.86,	2.89,	2.91])/100).transpose()
+        self.book_yield = pd.DataFrame(data=USrate, index=np.arange(1,MAX_MATURITY+1), columns=['RRate'])
         # Initialisation de value
-        self.value = pd.DataFrame(data=face_value, index=np.arange(1,time_horizon+1), columns=['Market Value', 'Book Value', 'Face Value'])
+        self.value = pd.DataFrame(data=value, index=np.arange(1,time_horizon+1), columns=['Market Value', 'Book Value', 'Face Value'])
         self.value.loc[:starting_point-1, 'Book Value'] = 0
-        self.value.loc[:starting_point-1, 'Face Value'] = 0
         self.value.loc[:starting_point-1, 'Market Value'] = 0
+        self.value.loc[:starting_point-1, 'Face Value'] = 0
+        self.value.loc[self.starting_point:self.time_horizon, 'Face Value'] = value * np.power((1 + self.book_yield.loc[self.MAX_MATURITY, 'RRate']), self.MAX_MATURITY)
 
         # Initialisation des deflators
         self.deflators = pd.DataFrame(data=1, index=np.arange(1,time_horizon+1), columns=['Deflators'])
@@ -81,44 +82,56 @@ class Bond(Asset):
         self.currency = currency
         self.coupon = coupon # number of coupons    
 
-    def cashOut(self, current_step):
+    def cashOut(self, current_step): # on n'appelle la methode cashOut qu'a maturite i.e. on recupere le nominal (Face Value) et non revente a la Market Value
         output = {}
-        output['all'] = self.value.loc[current_step, 'Market Value']
-        if(current_step<self.time_horizon):
+        output['all'] = self.value.loc[self.starting_point, 'Face Value']
+        if(current_step < self.time_horizon):
             output['pnl'] = output['all'] - self.value.loc[current_step, 'Book Value']
             self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Market Value'] = 0
             self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Book Value'] = 0
             self.value.loc[np.arange(current_step+1,self.time_horizon+1), 'Face Value'] = 0
         return output
    
-    def sell(self, amount, current_step):
+    def sell(self, amount, current_step): # on vend avant maturite donc on recupere la somme en Market Value et non en nominal (Face Value)
         res = 0
-        if(amount <= self.value.loc[current_step, 'Market Value']):
-            self.value.loc[current_step+1:self.time_horizon, 'Market Value'] -= amount 
-            self.value.loc[current_step+1:self.time_horizon, 'Face Value'] -= amount
-            self.value.loc[current_step+1:self.time_horizon, 'Book Value'] -= amount
-            if(self.value.loc[current_step+1, 'Book Value'] < 0):
-                res = -self.value.loc[current_step+1:self.time_horizon, 'Book Value'] # s'il renvoit une valeur>0 = Plus Value, <0 = Moins Value
-                self.value.loc[current_step+1:self.time_horizon, 'Book Value'] = 0
+        ratio = amount / self.value.loc[current_step, 'Market Value']
+        if(ratio <= 1):
+            self.value.loc[current_step:self.time_horizon, 'Market Value'] -= ratio \
+                * self.value.loc[current_step:self.time_horizon, 'Market Value'] 
+            self.value.loc[current_step:self.time_horizon, 'Face Value'] -= ratio \
+                * self.value.loc[current_step:self.time_horizon, 'Face Value']
+            self.value.loc[current_step:self.time_horizon, 'Book Value'] -= ratio \
+                * self.value.loc[current_step:self.time_horizon, 'Book Value']
+            if(self.value.loc[current_step, 'Book Value'] < 0):
+                res = -self.value.loc[current_step, 'Book Value'] # s'il renvoit une valeur>0 = Plus Value, <0 = Moins Value
+                self.value.loc[current_step:self.time_horizon, 'Book Value'] = 0
         return res
 
-    def updateValue(self, current_step, current_yield, spreads): 
+    def updateValue(self, current_step, current_yield, spreads): # assertion: self.maturity > 0
         # zero-coupon hypothesis
         # Book Value amortization
-        denom1 = np.power((1 + self.book_yield.loc[self.maturity, 'RRate']), (self.MAX_MATURITY - self.maturity))
+        res = self.value.loc[current_step, 'Market Value']
+        denom1 = np.power((1 + self.book_yield.loc[self.maturity, 'RRate']), (self.maturity))
         self.value.loc[current_step:self.time_horizon, 'Book Value'] = self.value.loc[self.starting_point, 'Face Value'] / denom1
 #        # Market Value updating
-        denom2 = np.power((1 + current_yield.loc[self.maturity, 'RRate'] + spreads.loc[self.maturity, 'Spreads']), (self.MAX_MATURITY - self.maturity))
+        denom2 = np.power((1 + current_yield.loc[self.maturity] + spreads.loc[self.maturity]), (self.maturity))
         self.value.loc[current_step:self.time_horizon, 'Market Value'] = self.value.loc[self.starting_point, 'Face Value'] / denom2
-        
+        if(current_step > self.starting_point):
+            res = self.value.loc[current_step, 'Market Value'] - res
+        else: 
+            res = 0
+        return res # valeur apres actualisation - valeur avant actualisation = benefices financiers de l'annee
+    
     def update(self, current_step, current_yield, spreads):
+        res= 0
         if(current_step >= self.starting_point):
+            if(self.maturity > 0):# and current_step>1):
+                res = self.updateValue(current_step, current_yield, spreads)
+            self.maturity -= 1
             if(self.maturity == 0):
                 self.flag = self.cashOut(current_step)
-            elif(self.maturity > 0):
-                self.updateValue(current_step, current_yield, spreads)
-            self.maturity -= 1
-
+        return res 
+    
     def getWealth(self, current_step):
         return (self.value.loc[current_step, 'Market Value'])
 
@@ -141,18 +154,20 @@ class Bond(Asset):
 #       Start of the testing part of the code
 #--------------------------------------------------
 
-#def main():
-#    import gc
-#    gc.enable()
-#    bond = Bond(starting_point=10, face_value=100)
-#    yield_curve = pd.DataFrame(data=abs(np.random.normal(20,5, size=bond.time_horizon)), index=np.arange(1,bond.time_horizon+1), columns=['RRate'])
-#    bond.book_yield = pd.DataFrame(data=np.log(np.arange(101, 121, 1)), index=np.arange(1,bond.time_horizon+1), columns=['RRate'])
-#
-#    for i in range(1, 51):
-#        bond.update(i, yield_curve, pd.DataFrame(data=0, index=np.arange(1,bond.time_horizon+1), columns=['Spreads']))
-#    bond.value.plot()
-#    bond.computePotential()
-#    bond.potential.plot()
-#
-#if __name__ == "__main__":
-#    main()
+def main():
+    import gc
+    gc.enable()
+    
+    bond = Bond(value=100, starting_point=10)
+    # ---------------------------------
+    noise = np.random.normal(0, .005, size=30)
+    USrate = (np.asarray([1.22,	1.35,	1.51,	1.65,	1.78,	1.89,	1.98,	2.06,	2.13,	2.19,	2.24,	2.29,	2.33,	2.37,	2.41,	2.45,	2.49,	2.53,	2.56,	2.60,	2.63,	2.67,	2.70,	2.73,	2.77,	2.80,	2.83,	2.86,	2.89,	2.91])/100+noise).transpose()
+    yield_curve = pd.DataFrame(data=USrate, index=np.arange(1,len(USrate)+1), columns=['RRate'])
+    spreads = pd.DataFrame(data=0, index=np.arange(1,len(USrate)+1), columns=['Spreads'])
+    # ---------------------------------
+    for i in range(1, bond.time_horizon+1):
+        bond.update(i, yield_curve.loc[:, 'RRate'], spreads.loc[:, 'Spreads'])
+    bond.value.plot()
+
+if __name__ == "__main__":
+    main()
