@@ -3,7 +3,7 @@
 Created on May 14th 2017
 
 @author: Laurent DEBRIL
-Date of last revision: May 29th 2017
+Date of last revision: August 1st 2017
 
 """
 
@@ -35,9 +35,9 @@ class Liabilities(object):
         if(math_provision != None):
             self.math_provision.append(math_provision)
         else:
-            self.math_provision.append(Liability(value=500, starting_point=1, age=30, lifespan=30))
+            self.math_provision.append(Liability(value=500, starting_point=1, age=40, lifespan=30))
             self.math_provision.append(Liability(value=200, starting_point=1, age=30, lifespan=30))
-            self.math_provision.append(Liability(value=300, starting_point=1, age=30, lifespan=30))
+            self.math_provision.append(Liability(value=300, starting_point=1, age=50, lifespan=30))
             # parametrer la provision
 # ---------------------------------------------------------
         if(cap_reserve != None):
@@ -157,23 +157,17 @@ class Liabilities(object):
 
 #def main():
 #    passif = Liabilities()
-#    flag1, flag2, flag3 = (0, 0, 0)
-#    print(passif)
 #    for t in range(1, passif.time_horizon+1):
-#        tmp = passif.update(current_step=t, mode='mid')
-#        if(type(tmp).__name__ == 'tuple'):
-#            flag1 = tmp[0]
-#            flag2 = tmp[1]
-#        else:
-#            flag1 = tmp
-#        flag3 += passif.update(current_step=t, mode='end')
-#        print(flag1, flag2, flag3)
-#        flag1, flag2, flag3 = (0,0,0)
+#        passif.update(current_step=t, mode='mid')
+#        passif.update(current_step=t, mode='end')
+#
 #    df = passif.math_provision[0].value.plot(title='Simulation d\'un portefeuille auto-géré de contrats d\'assurance')
 #    for e in passif.math_provision:
 #        e.value.plot(ax =df)
 #    df.axvline(30, color='black', linewidth=.5, linestyle='--')
 #    df.axvline(31, color='black', linewidth=.5, linestyle='--')
+#    passif.computeMPVal().plot()
+#
 #
 #if __name__ == "__main__":
 #    main()

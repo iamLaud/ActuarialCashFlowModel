@@ -3,7 +3,7 @@
 Created on Thu May 18 10:01:38 2017
 
 @author: Laurent DEBRIL
-Date of last revision: May 23rd 2017
+Date of last revision: August 1st 2017
 
 """
 
@@ -13,7 +13,8 @@ Date of last revision: May 23rd 2017
 import numpy as np
 import pandas as pd
 import sys
-sys.path.append(r'C:\Users\FR015797\Documents\PyALM_gen\code\alm\balancesheet\assets\asset') #the directory that contains my classes
+MY_PATH = r'C:\Users\FR015797\Documents\PyALM_gen\code\alm'
+sys.path.append(MY_PATH + r'\balancesheet\assets\asset') #the directory that contains my classes
 #--------------------------------------------------
 #           Project packages
 #--------------------------------------------------
@@ -180,11 +181,11 @@ class Assets(object):
                 if(type(e).__name__ == asset_type):
                     selection.append(e)
 
-#        selection.sort(key=lambda x:abs(x.value.loc[current_step, 'Market Value'] \
-#                                        + x.potential.loc[current_step, 'Potential Gain'] \
-#                                        + x.potential.loc[current_step, 'Potential Loss'] - amount), reverse=False)
-        selection.sort(key=lambda x:abs(x.value.loc[current_step, 'Book Value'] \
-                                        - amount), reverse=False)
+        selection.sort(key=lambda x:abs(x.value.loc[current_step, 'Market Value'] \
+                                        + x.potential.loc[current_step, 'Potential Gain'] \
+                                        + x.potential.loc[current_step, 'Potential Loss'] - amount), reverse=False)
+#        selection.sort(key=lambda x:abs(x.value.loc[current_step, 'Book Value'] \
+#                                        - amount), reverse=False)
         # l'Asset dont la valeur est la plus proche du montant souhaite est ordonne en premier dans la liste
         pos = 0
         while(selection[pos].value.loc[current_step, 'Market Value'] == 0 and pos<len(selection)-1):
@@ -206,12 +207,12 @@ class Assets(object):
                         + self.computePortfolioPGL().loc[current_step, 'Portfolio PGL']
 
         amount = min(amount, threshhold)
-#        print("THRESHOLD = ", amount)
         buffer = 0
         while(buffer < amount):
             e = self._lookout_(amount=(amount-buffer), current_step=current_step, asset_type=asset_type)
             e.computePotential()
-            val = e.value.loc[current_step, 'Market Value'] + e.potential.loc[current_step, 'Potential Gain'] + e.potential.loc[current_step, 'Potential Loss']
+            val = e.value.loc[current_step, 'Market Value'] + e.potential.loc[current_step, 'Potential Gain'] \
+                    + e.potential.loc[current_step, 'Potential Loss']
             if(val > (amount-buffer)):
                 buffer += e.sell(current_step=current_step, amount=(amount-buffer))
             else:
@@ -222,13 +223,13 @@ class Assets(object):
         """
             will rebalance the current composition of the portfolio in compliance with the theoretical ratios
         """
-        total = self.computePortfolioVal().loc[current_step, 'Portfolio Book Value']
-        err = .1
+        total = self.computePortfolioVal().loc[current_step, 'Portfolio Market Value']
+        err = .0
         EQ_theory = total * self.ratio['Equity']
         bond_theory = total * self.ratio['Bond']
         cash_theory = total * self.ratio['Cash']
 #       ------------- CHECK THE BOND COMPOSITION -------------------
-        tmp = bond_theory - self.computeBondVal().loc[current_step, 'Bond Book Value']
+        tmp = bond_theory - self.computeBondVal().loc[current_step, 'Bond Market Value']
         errEmp = tmp/bond_theory*100
         if(abs(errEmp)>err):
             if(tmp>0):
@@ -236,7 +237,7 @@ class Assets(object):
             if(tmp<0):
                 self._decrease_(amount=abs(tmp), current_step=current_step, asset_type='Bond')
 #       ------------- CHECK THE EQUITY COMPOSITION -------------------
-        tmp = EQ_theory - self.computeEQVal().loc[current_step, 'EQ Book Value']
+        tmp = EQ_theory - self.computeEQVal().loc[current_step, 'EQ Market Value']
         errEmp = tmp/EQ_theory*100
         if(abs(errEmp)>err):
             if(tmp>0):
@@ -287,11 +288,11 @@ class Assets(object):
 #       Start of the testing part of the code
 #--------------------------------------------------
 
-def main():
-    import gc
-    gc.enable()
-
-    assets = Assets(wealth=1000, time_horizon=50)
+#def main():
+#    import gc
+#    gc.enable()
+#
+#    assets = Assets(wealth=1000, time_horizon=50)
 ##     -------- RAW INPUT --------------
 #    noise = np.random.normal(0, .001, size=30)
 #    USrate = (np.asarray([1.22,	1.35,	1.51,	1.65,	1.78,	1.89,	1.98,	2.06,	2.13,	2.19,	2.24,	2.29,	2.33,	2.37,	2.41,	2.45,	2.49,	2.53,	2.56,	2.60,	2.63,	2.67,	2.70,	2.73,	2.77,	2.80,	2.83,	2.86,	2.89,	2.91])/100+noise).transpose()
@@ -304,13 +305,21 @@ def main():
 #
 #    for t in range(1, assets.time_horizon+1):
 #        assets.update(current_step=t, current_yield=yield_curve.loc[:, 'RRate'], spreads=spreads.loc[:, 'Spreads'], cash_flows=cash_flows, statement=statement)
-#        if(t%1 == 0):
-#            assets._rebalance_(t)
-#    df=assets.computeBondVal().loc[:, 'Bond Book Value'].plot(title='Valeur des différentes classes d\'actifs au cours de la simulation')
-#    assets.computeEQVal().loc[:, 'EQ Book Value'].plot(ax=df)
+#        assets._rebalance_(t)
+#        
+#    df=assets.computeBondVal().loc[:, 'Bond Market Value'].plot(title='Valeur des différentes classes d\'actifs au cours de la simulation')
+#    assets.computeEQVal().loc[:, 'EQ Market Value'].plot(ax=df)
 #    assets.computeCashVal().plot(ax=df)
+#    df.legend(['Bond Value', 'Equity Value', 'Cash Value'], loc='center left', bbox_to_anchor=(1, 0.5))
+#    df.grid(True)
+#
 #    print("Number of items in portfolio = ", len(assets.portfolio))
-#    assets.computePortfolioVal().plot(title='Valeur du portefeuille d\'actifs au cours de la simulation')
-
-if __name__ == "__main__":
-    main()
+#    
+#    df2 = assets.computePortfolioVal().plot(title='Valeur du portefeuille d\'actifs au cours de la simulation')
+#    df2.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+#    df2.grid(True)
+#    print(cash_flows)
+#    
+#    
+#if __name__ == "__main__":
+#    main()

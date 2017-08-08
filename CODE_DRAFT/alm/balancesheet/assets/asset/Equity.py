@@ -3,7 +3,7 @@
 Created on Thu May 18 10:01:38 2017
 
 @author: FR015797
-Date of last revision: May 18th 2017
+Date of last revision: August 1st 2017
 """
 
 
@@ -53,7 +53,7 @@ class Equity(Asset):
         self.return_rate = pd.DataFrame(data=0, index=np.arange(1,time_horizon+1), columns=['RRate'])
         self.return_rate.loc[self.starting_point:self.time_horizon, 'RRate'] = return_rate
         # ligne suivante temporaire pour phase de coding/testing:
-        self.return_rate.loc[self.starting_point:self.time_horizon, 'RRate'] = np.random.normal(.08, .07, size=self.time_horizon-self.starting_point+1 )
+        self.return_rate.loc[self.starting_point:self.time_horizon, 'RRate'] = np.random.normal(.08, .12, size=self.time_horizon-self.starting_point+1 )
         # Initialisation de value
         self.value = pd.DataFrame(data=value, index=np.arange(1,time_horizon+1), columns=['Market Value', 'Book Value'])
         self.value.loc[:starting_point-1, 'Book Value'] = 0
@@ -127,8 +127,9 @@ class Equity(Asset):
         # no dividend hypothesis
         # non amortizable Asset type i.e. Book Value doesn't decrease over time
         # Market Value updating only
-        res = self.value.loc[current_step, 'Market Value'] * self.return_rate.loc[current_step, 'RRate']
-        self.value.loc[current_step:self.time_horizon, 'Market Value'] = self.value.loc[current_step, 'Market Value'] + res
+        res = self.value.loc[current_step, 'Market Value'] 
+        self.value.loc[current_step:self.time_horizon, 'Market Value'] = self.value.loc[current_step, 'Market Value'] * (1 + self.return_rate.loc[current_step, 'RRate'])
+        res = self.value.loc[current_step, 'Market Value'] - res
         return res
         
     def update(self, current_step, current_yield=None, spreads=None):
